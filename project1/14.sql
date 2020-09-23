@@ -1,2 +1,2 @@
-SELECT name From Pokemon
-Where type = 'Grass' and id in (SELECT before_id From Evolution)
+SELECT name From Pokemon, (SELECT before_id From Evolution) As T
+Where type = 'Grass' and id = before_id
