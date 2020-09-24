@@ -3,4 +3,4 @@ SELECT name from Pokemon where type in
 (SELECT DISTINCT COUNT(type) from Pokemon
 GROUP BY type
 ORDER BY COUNT(type) DESC LIMIT 1,1))
-ORDER BY name
+ORDER BY name;

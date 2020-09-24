@@ -6,4 +6,4 @@ SELECT X.before_id as first_id, X.before_name as first_name, X.after_name as sec
 Where X.after_id = Y.before_id
 and X.before_id not in (SELECT after_id From Evolution)
 and Y.after_id not in (SELECT before_id From Evolution)
-ORDER BY first_id
+ORDER BY first_id;

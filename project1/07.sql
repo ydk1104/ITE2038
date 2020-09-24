@@ -1,2 +1,2 @@
 SELECT name from Trainer
-ORDER BY hometown
+ORDER BY hometown;

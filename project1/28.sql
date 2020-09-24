@@ -3,4 +3,4 @@ SELECT name, avg_level From
 (SELECT id From Pokemon Where type = 'Normal' or type = 'Electric')
 GROUP BY owner_id) As temp, Trainer
 Where owner_id = Trainer.id
-ORDER BY avg_level
+ORDER BY avg_level;

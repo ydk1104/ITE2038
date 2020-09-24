@@ -1,1 +1,1 @@
-SELECT id,name From Pokemon ORDER BY id
+SELECT id,name From Pokemon ORDER BY id;

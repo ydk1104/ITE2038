@@ -3,4 +3,4 @@ SELECT name From Trainer,
 GROUP BY pid, owner_id
 HAVING COUNT(*) > 1) As Temp
 Where id = owner_id
-ORDER BY name
+ORDER BY name;
