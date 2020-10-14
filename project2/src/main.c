@@ -1,8 +1,17 @@
 #include "bpt.h"
+#include "db.h"
 
 // MAIN
 
+int my_main(){
+	int file = open_table("out/out.txt");
+	printf("open_table test : %d\n", file);
+	return 0;
+}
+
 int main( int argc, char ** argv ) {
+
+		return my_main();
 
     char * input_file;
     FILE * fp;
