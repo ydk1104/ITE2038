@@ -38,6 +38,7 @@ typedef struct{
 						char value[120];
 					}leaf[31];
 				}page;
+				uint64_t pageNum;
 		};
 	};
 }page_t;

@@ -228,7 +228,7 @@ void print_leaves( node * root ) {
         for (i = 0; i < c->num_keys; i++) {
             if (verbose_output)
                 printf("%lx ", (unsigned long)c->pointers[i]);
-            printf("%d ", c->keys[i]);
+            printf("%ld ", c->keys[i]);
         }
         if (verbose_output)
             printf("%lx ", (unsigned long)c->pointers[order - 1]);
@@ -308,7 +308,7 @@ void print_tree( node * root ) {
         for (i = 0; i < n->num_keys; i++) {
             if (verbose_output)
                 printf("%lx ", (unsigned long)n->pointers[i]);
-            printf("%d ", n->keys[i]);
+            printf("%ld ", n->keys[i]);
         }
         if (!n->is_leaf)
             for (i = 0; i <= n->num_keys; i++)
@@ -328,12 +328,12 @@ void print_tree( node * root ) {
 /* Finds the record under a given key and prints an
  * appropriate message to stdout.
  */
-void find_and_print(node * root, int key, bool verbose) {
+void find_and_print(node * root, int64_t key, bool verbose) {
     record * r = find(root, key, verbose);
     if (r == NULL)
-        printf("Record not found under key %d.\n", key);
+        printf("Record not found under key %ld.\n", key);
     else 
-        printf("Record at %lx -- key %d, value %d.\n",
+        printf("Record at %lx -- key %ld, value %s.\n",
                 (unsigned long)r, key, r->value);
 }
 
@@ -341,11 +341,11 @@ void find_and_print(node * root, int key, bool verbose) {
 /* Finds and prints the keys, pointers, and values within a range
  * of keys between key_start and key_end, including both bounds.
  */
-void find_and_print_range( node * root, int key_start, int key_end,
+void find_and_print_range( node * root, int64_t key_start, int64_t key_end,
         bool verbose ) {
     int i;
     int array_size = key_end - key_start + 1;
-    int returned_keys[array_size];
+    int64_t returned_keys[array_size];
     void * returned_pointers[array_size];
     int num_found = find_range( root, key_start, key_end, verbose,
             returned_keys, returned_pointers );
@@ -353,7 +353,7 @@ void find_and_print_range( node * root, int key_start, int key_end,
         printf("None found.\n");
     else {
         for (i = 0; i < num_found; i++)
-            printf("Key: %d   Location: %lx  Value: %d\n",
+            printf("Key: %ld   Location: %lx  Value: %s\n",
                     returned_keys[i],
                     (unsigned long)returned_pointers[i],
                     ((record *)
@@ -367,8 +367,8 @@ void find_and_print_range( node * root, int key_start, int key_end,
  * returned_keys and returned_pointers, and returns the number of
  * entries found.
  */
-int find_range( node * root, int key_start, int key_end, bool verbose,
-        int returned_keys[], void * returned_pointers[]) {
+int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
+        int64_t returned_keys[], void * returned_pointers[]) {
     int i, num_found;
     num_found = 0;
     node * n = find_leaf( root, key_start, verbose );
@@ -393,7 +393,7 @@ int find_range( node * root, int key_start, int key_end, bool verbose,
  * if the verbose flag is set.
  * Returns the leaf containing the given key.
  */
-node * find_leaf( node * root, int key, bool verbose ) {
+node * find_leaf( node * root, int64_t key, bool verbose ) {
     int i = 0;
     node * c = root;
     if (c == NULL) {
@@ -405,8 +405,8 @@ node * find_leaf( node * root, int key, bool verbose ) {
         if (verbose) {
             printf("[");
             for (i = 0; i < c->num_keys - 1; i++)
-                printf("%d ", c->keys[i]);
-            printf("%d] ", c->keys[i]);
+                printf("%ld ", c->keys[i]);
+            printf("%ld] ", c->keys[i]);
         }
         i = 0;
         while (i < c->num_keys) {
@@ -420,8 +420,8 @@ node * find_leaf( node * root, int key, bool verbose ) {
     if (verbose) {
         printf("Leaf [");
         for (i = 0; i < c->num_keys - 1; i++)
-            printf("%d ", c->keys[i]);
-        printf("%d] ->\n", c->keys[i]);
+            printf("%ld ", c->keys[i]);
+        printf("%ld] ->\n", c->keys[i]);
     }
     return c;
 }
@@ -430,7 +430,7 @@ node * find_leaf( node * root, int key, bool verbose ) {
 /* Finds and returns the record to which
  * a key refers.
  */
-record * find( node * root, int key, bool verbose ) {
+record * find( node * root, int64_t key, bool verbose ) {
     int i = 0;
     node * c = find_leaf( root, key, verbose );
     if (c == NULL) return NULL;
@@ -458,14 +458,15 @@ int cut( int length ) {
 /* Creates a new record to hold the value
  * to which a key refers.
  */
-record * make_record(int value) {
+record * make_record(const char* value) {
     record * new_record = (record *)malloc(sizeof(record));
     if (new_record == NULL) {
         perror("Record creation.");
         exit(EXIT_FAILURE);
     }
     else {
-        new_record->value = value;
+        strncpy(new_record->value, value, 119);
+		new_record->value[119] = 0;
     }
     return new_record;
 }
@@ -525,7 +526,7 @@ int get_left_index(node * parent, node * left) {
  * key into a leaf.
  * Returns the altered leaf.
  */
-node * insert_into_leaf( node * leaf, int key, record * pointer ) {
+node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
 
     int i, insertion_point;
 
@@ -549,7 +550,7 @@ node * insert_into_leaf( node * leaf, int key, record * pointer ) {
  * the tree's order, causing the leaf to be split
  * in half.
  */
-node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, record * pointer) {
+node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key, record * pointer) {
 
     node * new_leaf;
     int * temp_keys;
@@ -622,7 +623,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int key, recor
  * without violating the B+ tree properties.
  */
 node * insert_into_node(node * root, node * n, 
-        int left_index, int key, node * right) {
+        int left_index, int64_t key, node * right) {
     int i;
 
     for (i = n->num_keys; i > left_index; i--) {
@@ -641,7 +642,7 @@ node * insert_into_node(node * root, node * n,
  * the order, and causing the node to split into two.
  */
 node * insert_into_node_after_splitting(node * root, node * old_node, int left_index, 
-        int key, node * right) {
+        int64_t key, node * right) {
 
     int i, j, split, k_prime;
     node * new_node, * child;
@@ -722,7 +723,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 /* Inserts a new node (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-node * insert_into_parent(node * root, node * left, int key, node * right) {
+node * insert_into_parent(node * root, node * left, int64_t key, node * right) {
 
     int left_index;
     node * parent;
@@ -763,7 +764,7 @@ node * insert_into_parent(node * root, node * left, int key, node * right) {
  * and inserts the appropriate key into
  * the new root.
  */
-node * insert_into_new_root(node * left, int key, node * right) {
+node * insert_into_new_root(node * left, int64_t key, node * right) {
 
     node * root = make_node();
     root->keys[0] = key;
@@ -781,7 +782,7 @@ node * insert_into_new_root(node * left, int key, node * right) {
 /* First insertion:
  * start a new tree.
  */
-node * start_new_tree(int key, record * pointer) {
+node * start_new_tree(int64_t key, record * pointer) {
 
     node * root = make_leaf();
     root->keys[0] = key;
@@ -800,7 +801,7 @@ node * start_new_tree(int key, record * pointer) {
  * however necessary to maintain the B+ tree
  * properties.
  */
-node * insert( node * root, int key, int value ) {
+node * insert( node * root, int64_t key, const char* value ) {
 
     record * pointer;
     node * leaf;
@@ -879,7 +880,7 @@ int get_neighbor_index( node * n ) {
 }
 
 
-node * remove_entry_from_node(node * n, int key, node * pointer) {
+node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
 
     int i, num_pointers;
 
@@ -1127,7 +1128,7 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
  * from the leaf, and then makes all appropriate
  * changes to preserve the B+ tree properties.
  */
-node * delete_entry( node * root, node * n, int key, void * pointer ) {
+node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
 
     int min_keys;
     node * neighbor;
@@ -1198,7 +1199,7 @@ node * delete_entry( node * root, node * n, int key, void * pointer ) {
 
 /* Master deletion function.
  */
-node * delete(node * root, int key) {
+node * delete(node * root, int64_t key) {
 
     node * key_leaf;
     record * key_record;

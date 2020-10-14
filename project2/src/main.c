@@ -6,18 +6,20 @@
 
 int my_main(){
 	int tbl_id = open_table("out/out.txt");
-//	pagenum_t num = file_alloc_page();
-	page_t temp = {0, };
-	file_read_page(0, &temp);
-	printf("read page:%lx\n", temp.header.numOfPages);
-//	temp.header.numOfPages = 0xaaaaaaaa;
-//	file_write_page(0, &temp);
+	pagenum_t num = file_alloc_page();
+	printf("num : %d\n", num);
+	page_t head = {0, };
+	file_read_page(0, &head);
+	printf("header page:%lx %lx %lx\n",
+					head.header.freePageNum,
+					head.header.rootPageNum,
+					head.header.numOfPages);
 	return 0;
 }
 
 int main( int argc, char ** argv ) {
 
-		return my_main();
+//		return my_main();
 
     char * input_file;
     FILE * fp;
@@ -25,6 +27,7 @@ int main( int argc, char ** argv ) {
     int input, range2;
     char instruction;
     char license_part;
+	char input_value[120];
 
     root = NULL;
     verbose_output = false;
@@ -66,8 +69,8 @@ int main( int argc, char ** argv ) {
             print_tree(root);
             break;
         case 'i':
-            scanf("%d", &input);
-            root = insert(root, input, input);
+            scanf("%d %s", &input, input_value);
+            root = insert(root, input, input_value);
             print_tree(root);
             break;
         case 'f':
