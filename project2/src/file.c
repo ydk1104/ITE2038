@@ -43,6 +43,13 @@ pagenum_t file_alloc_page(){
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
+	page_t head, clean = {0, };
+
+	file_read_page(0, &head);
+	clean.free.nextFreePage = head.header.freePageNum;
+	head.header.freePageNum = pagenum;
+	file_write_page(0, &head);
+	file_write_page(pagenum, &clean);
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
