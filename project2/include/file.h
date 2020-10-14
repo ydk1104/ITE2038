@@ -8,10 +8,40 @@
 #include<sys/stat.h>
 #include<unistd.h>
 typedef uint64_t pagenum_t;
-typedef struct page_t {
+typedef struct{
 // in-memory page structure
-	char byte[4096];
+	union{
+		char byte[4096];
+			union{
+				struct{
+					uint64_t freePageNum;
+					uint64_t rootPageNum;
+					uint64_t numOfPages;
+				}header;
+				struct{
+					uint64_t nextFreePage;
+				}free;
+				union{
+					struct{
+						uint64_t parentPageNum;
+						uint32_t isLeaf;
+						uint32_t numOfKeys;
+						char reserved[104];
+						uint64_t pageNum;
+					}page;
+					struct{
+						uint64_t key;
+						uint64_t pageNum;
+					}internal[248];
+					struct{
+						uint64_t key;
+						char value[120];
+					}leaf[31];
+				}page;
+		};
+	};
 }page_t;
+
 #define PAGE_SIZE 4096
 #define TABLE_SIZE 1
 

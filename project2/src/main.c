@@ -1,11 +1,17 @@
 #include "bpt.h"
 #include "db.h"
+#include "file.h"
 
 // MAIN
 
 int my_main(){
-	int file = open_table("out/out.txt");
-	printf("open_table test : %d\n", file);
+	int tbl_id = open_table("out/out.txt");
+//	pagenum_t num = file_alloc_page();
+	page_t temp = {0, };
+	file_read_page(0, &temp);
+	printf("read page:%lx\n", temp.header.numOfPages);
+//	temp.header.numOfPages = 0xaaaaaaaa;
+//	file_write_page(0, &temp);
 	return 0;
 }
 

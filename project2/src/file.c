@@ -15,10 +15,11 @@ int file_open(char* pathname){
 		}
 		puts("New file");
 		page_t src = {0, };
+		src.header.numOfPages = 1;
+		table_id_to_fd[table_id] = fd;
 		file_write_page(0, &src);
 	}
-	
-	table_id_to_fd[table_id] = fd;
+	else table_id_to_fd[table_id] = fd;
 	return table_id++;
 }
 // Allocate an on-disk page from the free page list
@@ -42,4 +43,5 @@ void file_write_page(pagenum_t pagenum, const page_t* src){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
 	lseek(fd, pagenum * PAGE_SIZE, SEEK_SET);
 	write(fd, src->byte, PAGE_SIZE);
+	fsync(fd);
 }
