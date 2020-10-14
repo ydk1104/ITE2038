@@ -25,8 +25,20 @@ int file_open(char* pathname){
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
-	
-	return -1;
+	page_t head;
+	file_read_page(0, &head);
+	int freePageNum = head.header.freePageNum;
+	if(freePageNum){
+		page_t free_page;
+		file_read_page(freePageNum, &free_page);
+		head.header.freePageNum = free_page.free.nextFreePage;
+	}
+	else{
+		page_t free_page = {0, };
+		file_write_page(freePageNum = head.header.numOfPages++, &free_page);
+	}
+	file_write_page(0, &head);
+	return freePageNum;
 }
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum){
@@ -43,5 +55,4 @@ void file_write_page(pagenum_t pagenum, const page_t* src){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
 	lseek(fd, pagenum * PAGE_SIZE, SEEK_SET);
 	write(fd, src->byte, PAGE_SIZE);
-	fsync(fd);
 }
