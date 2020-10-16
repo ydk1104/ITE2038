@@ -20,6 +20,8 @@ int db_insert (int64_t key, char * value){
 	return 0;
 }
 int db_find (int64_t key, char * ret_val){
+	page_t header;
+	file_read_page(0, &header);
 	record* ptr = find(header.header.rootPageNum, key, false);
 	if(!ptr) return 1;
 	strncpy(ret_val, ptr->value, 120);
