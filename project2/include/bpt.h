@@ -103,7 +103,7 @@ union{
  * This global variable is initialized to the
  * default value.
  */
-extern int order;
+extern int leaf_order, internal_order;
 
 /* The queue is used to print the tree in
  * level order, starting from the root

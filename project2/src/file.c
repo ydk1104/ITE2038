@@ -83,7 +83,7 @@ struct node* page_to_node(pagenum_t pagenum){
 	if(node -> is_leaf){
 		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
 		node->pointers = malloc(leaf_order * sizeof(void*));
-		node->pages[order-1] = page->page.pageNum;
+		node->pages[leaf_order-1] = page->page.pageNum;
 		for(int i=0; i<node->num_keys; i++){
 			node->keys[i] = page->leaf[i].key;
 			node->pointers[i] = malloc(sizeof(record));

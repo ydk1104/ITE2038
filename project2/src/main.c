@@ -19,7 +19,7 @@ int my_main(){
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
-	insert_test(1000);	
+	insert_test(10000);	
 	return 0;
 }
 
@@ -37,15 +37,6 @@ int main( int argc, char ** argv ) {
 
     root = NULL;
     verbose_output = false;
-
-    if (argc > 1) {
-        order = atoi(argv[1]);
-        if (order < MIN_ORDER || order > MAX_ORDER) {
-            fprintf(stderr, "Invalid order: %d .\n\n", order);
-            usage_3();
-            exit(EXIT_FAILURE);
-        }
-    }
 
     license_notice();
     usage_1();  
