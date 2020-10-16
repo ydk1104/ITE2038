@@ -519,9 +519,14 @@ int get_left_index(node * parent, node * left) {
 
     int left_index = 0;
     while (left_index <= parent->num_keys && 
-            parent->pointers[left_index] != left)
+            parent->pages[left_index] != left->pagenum)
         left_index++;
-    return left_index;
+    printf("left_index : %d %d %d\n", parent->pagenum, left->pagenum, left_index);
+	printf("%d %d %d %d\n", parent->pages[0], parent->pages[1], parent->pages[2], parent->pages[3]);
+	if(parent->pages[left_index] != left->pagenum){
+		printf("check here");
+	}
+	return left_index;
 }
 
 /* Inserts a new pointer to a record and its corresponding
@@ -543,7 +548,8 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
     leaf->keys[insertion_point] = key;
     leaf->pointers[insertion_point] = pointer;
     leaf->num_keys++;
-    return leaf;
+	node_to_page(leaf);
+	return leaf;
 }
 
 
@@ -632,12 +638,13 @@ node * insert_into_node(node * root, node * n,
     int i;
 
     for (i = n->num_keys; i > left_index; i--) {
-        n->pointers[i + 1] = n->pointers[i];
+        n->pages[i + 1] = n->pages[i];
         n->keys[i] = n->keys[i - 1];
     }
     n->pages[left_index + 1] = right->pagenum;
     n->keys[left_index] = key;
     n->num_keys++;
+	node_to_page(n);
     return root;
 }
 
@@ -712,10 +719,10 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
     new_node->parent = old_node->parent;
     for (i = 0; i <= new_node->num_keys; i++) {
 		child = page_to_node(new_node->pages[i]);
-        child->parent = new_node;
+        child->parent = new_node->pagenum;
 		node_to_page(child);
     }
-
+	node_to_page(new_node);
     /* Insert a new key into the parent of the two
      * nodes resulting from the split, with
      * the old node to the left and the new to the right.
@@ -734,7 +741,7 @@ node * insert_into_parent(node * root, node * left, int64_t key, node * right) {
     int left_index;
     node * parent;
 
-    parent = left->parent;
+    parent = page_to_node(left->parent);
 
     /* Case: new root. */
 
@@ -778,8 +785,10 @@ node * insert_into_new_root(node * left, int64_t key, node * right) {
     root->pages[1] = right->pagenum;
     root->num_keys++;
     root->parent = NULL;
-    left->parent = root;
-    right->parent = root;
+    left->parent = root->pagenum;
+    right->parent = root->pagenum;
+	node_to_page(left);
+	node_to_page(right);
     return root;
 }
 
@@ -876,7 +885,7 @@ int get_neighbor_index( node * n ) {
      * return -1.
      */
     for (i = 0; i <= n->parent->num_keys; i++)
-        if (n->parent->pointers[i] == n)
+        if (n->parent->pages[i] == n->pagenum)
             return i - 1;
 
     // Error state.

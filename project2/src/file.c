@@ -2,55 +2,37 @@
 #include<file.h>
 
 int table_id_to_fd[TABLE_SIZE];
-page_t pages[100];
-int start, end;
+#define PAGE_POOL_SIZE 100
+page_t pages[PAGE_POOL_SIZE];
+int start, temp, end;
 
 pagenum_t get_pageidx_by_node(node* node){
 	pagenum_t pageidx = -1;
-	for(pagenum_t i=start; i!=end; i=(i+1)%100){
+	for(pagenum_t i=start; i!=end; i++){
 		if(pages[i].node == node){
 			return i;
 		}
 	}
-	if(end == 99){
-		end = 0;
+	if(end == PAGE_POOL_SIZE){
+		if(temp==PAGE_POOL_SIZE) return temp=0;
+		return temp++;
 	}
 	else return end++;
-	if(end == start){
-		int temp = start;
-		for(int i=start+1; i!=end; i=(i+1)%100){
-			if(pages[i].node == NULL){
-				pages[i] = pages[temp];
-				return start++;
-			}
-		}
-		printf("No Remain Pages");
-		return -1;
-	}
+
 }
 
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 	pagenum_t pageidx = -1;
-	for(pagenum_t i=start; i!=end; i=(i+1)%100){
+	for(pagenum_t i=start; i!=end; i++){
 		if(pages[i].node && pages[i].node->pagenum == pagenum){
 			return i;
 		}
 	}
-	if(end == 99){
-		end = 0;
+	if(end == PAGE_POOL_SIZE){
+		if(temp==PAGE_POOL_SIZE) return temp=0;
+		return temp++;
 	}
 	else return end++;
-	if(end == start){
-		int temp = start;
-		for(int i=start+1; i!=end; i=(i+1)%100){
-			if(pages[i].node == NULL){
-				pages[i] = pages[temp];
-				return start++;
-			}
-		}
-		printf("No Remain Pages");
-		return -1;
-	}
 }
 
 void node_to_page(node* node){
@@ -58,6 +40,7 @@ void node_to_page(node* node){
 
 	page_t *page = pages+pageidx;
 	memset(page, 0, sizeof(page_t));
+	page->node = node;
 	page->page.parentPageNum = (pagenum_t)node->parent;
 	page->page.isLeaf = node->is_leaf;
 	page->page.numOfKeys = node->num_keys;
