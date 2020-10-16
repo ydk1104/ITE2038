@@ -415,7 +415,7 @@ node * find_leaf( node * root, int64_t key, bool verbose ) {
         }
         if (verbose)
             printf("%d ->\n", i);
-        c = (node *)c->pointers[i];
+        c = page_to_node(c->pages[i]);
     }
     if (verbose) {
         printf("Leaf [");
