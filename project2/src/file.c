@@ -12,7 +12,21 @@ pagenum_t get_pageidx_by_node(node* node){
 			return i;
 		}
 	}
-	return end++;
+	if(end == 99){
+		end = 0;
+	}
+	else return end++;
+	if(end == start){
+		int temp = start;
+		for(int i=start+1; i!=end; i=(i+1)%100){
+			if(pages[i].node == NULL){
+				pages[i] = pages[temp];
+				return start++;
+			}
+		}
+		printf("No Remain Pages");
+		return -1;
+	}
 }
 
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
@@ -22,7 +36,21 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 			return i;
 		}
 	}
-	return end++;
+	if(end == 99){
+		end = 0;
+	}
+	else return end++;
+	if(end == start){
+		int temp = start;
+		for(int i=start+1; i!=end; i=(i+1)%100){
+			if(pages[i].node == NULL){
+				pages[i] = pages[temp];
+				return start++;
+			}
+		}
+		printf("No Remain Pages");
+		return -1;
+	}
 }
 
 void node_to_page(node* node){
