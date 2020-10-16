@@ -29,21 +29,24 @@ void node_to_page(node* node){
 	pagenum_t pageidx = get_pageidx_by_node(node);
 
 	page_t *page = pages+pageidx;
+	memset(page, 0, sizeof(page_t));
 	page->page.parentPageNum = (pagenum_t)node->parent;
 	page->page.isLeaf = node->is_leaf;
 	page->page.numOfKeys = node->num_keys;
 	int leaf_order = 31, internal_order = 248;
 	leaf_order = internal_order = 4;
 	if(node -> is_leaf){
+		page->page.pageNum = node->pages[leaf_order-1];
 		for(int i=0; i<node->num_keys; i++){
 			page->leaf[i].key = node->keys[i];
 			strncpy(page->leaf[i].value, ((record*)node->pointers[i])->value, 120);
 		}
 	}
 	else{
+		page->page.pageNum = node->pages[0];
 		for(int i=0; i<node->num_keys; i++){
 			page->internal[i].key = node->keys[i];
-			page->internal[i].pageNum = (pagenum_t)node->pointers[i];
+			page->internal[i].pageNum = node->pages[i+1];
 		}
 	}
 	file_write_page(node->pagenum, page);
@@ -69,6 +72,7 @@ struct node* page_to_node(pagenum_t pagenum){
 	if(node -> is_leaf){
 		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
 		node->pointers = malloc(leaf_order * sizeof(void*));
+		node->pages[order-1] = page->page.pageNum;
 		for(int i=0; i<node->num_keys; i++){
 			node->keys[i] = page->leaf[i].key;
 			node->pointers[i] = malloc(sizeof(record));
@@ -77,10 +81,11 @@ struct node* page_to_node(pagenum_t pagenum){
 	}
 	else{
 		node->keys = malloc((internal_order - 1) * sizeof(int64_t));
-		node->pointers = malloc(internal_order * sizeof(void*));
+		node->pages = malloc(internal_order * sizeof(pagenum_t*));
+		node->pages[0] = page->page.pageNum;
 		for(int i=0; i<node->num_keys; i++){
 			node->keys[i] = page->internal[i].key;
-			node->pointers[i] = (void*)page->internal[i].pageNum;
+			node->pages[i+1] = page->internal[i].pageNum;
 		}
 	}
 	return node;

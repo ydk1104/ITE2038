@@ -605,8 +605,8 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key, r
     free(temp_pointers);
     free(temp_keys);
 
-    new_leaf->pointers[order - 1] = leaf->pointers[order - 1];
-    leaf->pointers[order - 1] = new_leaf;
+    new_leaf->pages[order - 1] = leaf->pages[order - 1];
+    leaf->pages[order - 1] = new_leaf->pagenum;
 
     for (i = leaf->num_keys; i < order - 1; i++)
         leaf->pointers[i] = NULL;
@@ -615,6 +615,9 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key, r
 
     new_leaf->parent = leaf->parent;
     new_key = new_leaf->keys[0];
+	
+	node_to_page(leaf);
+	node_to_page(new_leaf);
 
     return insert_into_parent(root, leaf, new_key, new_leaf);
 }
@@ -632,7 +635,7 @@ node * insert_into_node(node * root, node * n,
         n->pointers[i + 1] = n->pointers[i];
         n->keys[i] = n->keys[i - 1];
     }
-    n->pointers[left_index + 1] = right;
+    n->pages[left_index + 1] = right->pagenum;
     n->keys[left_index] = key;
     n->num_keys++;
     return root;
@@ -649,7 +652,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
     int i, j, split, k_prime;
     node * new_node, * child;
     int * temp_keys;
-    node ** temp_pointers;
+    pagenum_t * temp_pointers;
 
     /* First create a temporary set of keys and pointers
      * to hold everything in order, including
@@ -673,7 +676,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 
     for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++) {
         if (j == left_index + 1) j++;
-        temp_pointers[j] = old_node->pointers[i];
+        temp_pointers[j] = old_node->pages[i];
     }
 
     for (i = 0, j = 0; i < old_node->num_keys; i++, j++) {
@@ -681,7 +684,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
         temp_keys[j] = old_node->keys[i];
     }
 
-    temp_pointers[left_index + 1] = right;
+    temp_pointers[left_index + 1] = right->pagenum;
     temp_keys[left_index] = key;
 
     /* Create the new node and copy
@@ -692,24 +695,25 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
     new_node = make_node();
     old_node->num_keys = 0;
     for (i = 0; i < split - 1; i++) {
-        old_node->pointers[i] = temp_pointers[i];
+        old_node->pages[i] = temp_pointers[i];
         old_node->keys[i] = temp_keys[i];
         old_node->num_keys++;
     }
-    old_node->pointers[i] = temp_pointers[i];
+    old_node->pages[i] = temp_pointers[i];
     k_prime = temp_keys[split - 1];
     for (++i, j = 0; i < order; i++, j++) {
-        new_node->pointers[j] = temp_pointers[i];
+        new_node->pages[j] = temp_pointers[i];
         new_node->keys[j] = temp_keys[i];
         new_node->num_keys++;
     }
-    new_node->pointers[j] = temp_pointers[i];
+    new_node->pages[j] = temp_pointers[i];
     free(temp_pointers);
     free(temp_keys);
     new_node->parent = old_node->parent;
     for (i = 0; i <= new_node->num_keys; i++) {
-        child = new_node->pointers[i];
+		child = page_to_node(new_node->pages[i]);
         child->parent = new_node;
+		node_to_page(child);
     }
 
     /* Insert a new key into the parent of the two
@@ -770,8 +774,8 @@ node * insert_into_new_root(node * left, int64_t key, node * right) {
 
     node * root = make_node();
     root->keys[0] = key;
-    root->pointers[0] = left;
-    root->pointers[1] = right;
+    root->pages[0] = left->pagenum;
+    root->pages[1] = right->pagenum;
     root->num_keys++;
     root->parent = NULL;
     left->parent = root;
@@ -812,7 +816,7 @@ node * insert( node * root, int64_t key, const char* value ) {
      * duplicates.
      */
 
-    if (find(root, key, false) != NULL)
+    if (root && find(root, key, false) != NULL)
         return root;
 
     /* Create a new record for the

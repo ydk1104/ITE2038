@@ -79,7 +79,10 @@ typedef struct record {
 
 typedef uint64_t pagenum_t;
 typedef struct node {
-    void ** pointers;
+union{
+	void ** pointers;
+	pagenum_t *pages;
+};
     uint64_t * keys;
     struct node * parent;
     bool is_leaf;
