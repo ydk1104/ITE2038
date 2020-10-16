@@ -28,5 +28,14 @@ int db_find (int64_t key, char * ret_val){
 	return 0;
 }
 int db_delete (int64_t key){
-	return 1;
+	page_t header;
+	file_read_page(0, &header);
+	pagenum_t root = delete(header.header.rootPageNum, key);
+	if(root==-1) return 1;
+	file_read_page(0, &header);
+	if(root != header.header.rootPageNum){
+		header.header.rootPageNum = root;
+		file_write_page(0, &header);
+	}
+	return 0;
 }
