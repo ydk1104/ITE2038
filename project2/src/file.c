@@ -8,7 +8,7 @@ int file_open(char* pathname){
 	static int table_id = 0;
 	fd = open(pathname, O_RDWR | O_SYNC);
 	if(fd == -1){ // pathname does not exist
-		fd = open(pathname, O_RDWR | O_CREAT | O_SYNC, 666);
+		fd = open(pathname, O_RDWR | O_CREAT | O_SYNC, 0666);
 		if(fd == -1){
 			puts("file create error");
 			return -1;
