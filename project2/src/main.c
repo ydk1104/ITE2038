@@ -7,7 +7,8 @@
 void insert_test(int N){
 	char s[11] = "0123456789";
 	for(int i=0; i<N; i++){
-		db_insert(i, s+(i%10));
+		int error = db_insert(i, s+(i%10));
+//		if(!error) printf("%d\n", i);
 	}
 }
 
@@ -19,7 +20,7 @@ int my_main(){
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
-	insert_test(10000);	
+	insert_test(100000);	
 	return 0;
 }
 

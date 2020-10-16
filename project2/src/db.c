@@ -10,14 +10,14 @@ int open_table (char *pathname){
 int db_insert (int64_t key, char * value){
 	page_t header;
 	file_read_page(0, &header);
-	node* root = page_to_node(header.header.rootPageNum);
-	root = insert(root, key, value);
-	node_to_page(root);
+	pagenum_t root = insert(header.header.rootPageNum, key, value);
+	if(root==-1) return 1;
 	file_read_page(0, &header);
-	if(root->pagenum != header.header.rootPageNum){
-		header.header.rootPageNum = root->pagenum;
+	if(root != header.header.rootPageNum){
+		header.header.rootPageNum = root;
 		file_write_page(0, &header);
 	}
+	return 0;
 }
 int db_find (int64_t key, char * ret_val){
 	return 1;

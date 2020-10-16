@@ -66,7 +66,7 @@
  * This global variable is initialized to the
  * default value.
  */
-int internal_order = DEFAULT_ORDER, leaf_order = DEFAULT_ORDER;
+int internal_order = DEFAULT_INTERNAL_ORDER, leaf_order = DEFAULT_LEAF_ORDER;
 
 /* The queue is used to print the tree in
  * level order, starting from the root
@@ -395,7 +395,7 @@ int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
  */
 node * find_leaf( node * root, int64_t key, bool verbose ) {
     int i = 0;
-    node * c = page_to_node(root->pagenum);
+    node * c = page_to_node(root);
     if (c == NULL) {
         if (verbose) 
             printf("Empty tree.\n");
@@ -721,6 +721,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
         child->parent = new_node->pagenum;
 		node_to_page(child);
     }
+	node_to_page(old_node);
 	node_to_page(new_node);
     /* Insert a new key into the parent of the two
      * nodes resulting from the split, with
@@ -788,7 +789,8 @@ node * insert_into_new_root(node * left, int64_t key, node * right) {
     right->parent = root->pagenum;
 	node_to_page(left);
 	node_to_page(right);
-    return root;
+	node_to_page(root);
+	return root->pagenum;
 }
 
 
@@ -804,7 +806,8 @@ node * start_new_tree(int64_t key, record * pointer) {
     root->pointers[leaf_order - 1] = NULL;
     root->parent = NULL;
     root->num_keys++;
-    return root;
+	node_to_page(root);
+    return root->pagenum;
 }
 
 
@@ -815,7 +818,7 @@ node * start_new_tree(int64_t key, record * pointer) {
  * however necessary to maintain the B+ tree
  * properties.
  */
-node * insert( node * root, int64_t key, const char* value ) {
+pagenum_t insert( node * root, int64_t key, const char* value ) {
 
     record * pointer;
     node * leaf;
@@ -825,7 +828,7 @@ node * insert( node * root, int64_t key, const char* value ) {
      */
 
     if (root && find(root, key, false) != NULL)
-        return root;
+        return -1;
 
     /* Create a new record for the
      * value.
@@ -849,7 +852,7 @@ node * insert( node * root, int64_t key, const char* value ) {
 
     /* Case: leaf has room for key and pointer.
      */
-
+	
     if (leaf->num_keys < leaf_order - 1) {
         leaf = insert_into_leaf(leaf, key, pointer);
         return root;

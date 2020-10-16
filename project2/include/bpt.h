@@ -17,6 +17,9 @@
 
 // Default order is 4.
 #define DEFAULT_ORDER 4
+#define DEFAULT_LEAF_ORDER 32
+#define DEFAULT_INTERNAL_ORDER 249
+
 
 // Minimum order is necessarily 3.  We set the maximum
 // order arbitrarily.  You may change the maximum order.
@@ -160,7 +163,7 @@ node * insert_into_node_after_splitting(node * root, node * parent,
 node * insert_into_parent(node * root, node * left, int64_t key, node * right);
 node * insert_into_new_root(node * left, int64_t key, node * right);
 node * start_new_tree(int64_t key, record * pointer);
-node * insert( node * root, int64_t key, const char* value );
+pagenum_t insert( node * root, int64_t key, const char* value );
 
 // Deletion.
 
