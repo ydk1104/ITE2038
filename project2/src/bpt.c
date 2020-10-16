@@ -395,7 +395,7 @@ int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
  */
 node * find_leaf( node * root, int64_t key, bool verbose ) {
     int i = 0;
-    node * c = root;
+    node * c = page_to_node(root->pagenum);
     if (c == NULL) {
         if (verbose) 
             printf("Empty tree.\n");
@@ -476,13 +476,13 @@ record * make_record(const char* value) {
  * to serve as either a leaf or an internal node.
  */
 node * make_node( void ) {
-    node * new_node;
+	node * new_node;
     new_node = malloc(sizeof(node));
     if (new_node == NULL) {
         perror("Node creation.");
         exit(EXIT_FAILURE);
     }
-    new_node->keys = malloc( (order - 1) * sizeof(int) );
+    new_node->keys = malloc( (order - 1) * sizeof(int64_t) );
     if (new_node->keys == NULL) {
         perror("New node keys array.");
         exit(EXIT_FAILURE);
@@ -496,6 +496,8 @@ node * make_node( void ) {
     new_node->num_keys = 0;
     new_node->parent = NULL;
     new_node->next = NULL;
+
+	new_node->pagenum = file_alloc_page();
     return new_node;
 }
 

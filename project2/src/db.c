@@ -10,8 +10,10 @@ int open_table (char *pathname){
 int db_insert (int64_t key, char * value){
 	page_t header;
 	file_read_page(0, &header);
-	node* root = insert((node*)header.header.rootPageNum, key, value);
+	node* root = page_to_node(header.header.rootPageNum);
+	root = insert(root, key, value);
 	node_to_page(root);
+	file_read_page(0, &header);
 	if(root->pagenum != header.header.rootPageNum){
 		header.header.rootPageNum = root->pagenum;
 		file_write_page(0, &header);

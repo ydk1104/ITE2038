@@ -5,18 +5,30 @@ int table_id_to_fd[TABLE_SIZE];
 page_t pages[100];
 int start, end;
 
-void node_to_page(node* node){
-	pagenum_t pagenum = -1;
-	for(int i=start; i!=end; i=(i+1)%100){
+pagenum_t get_pageidx_by_node(node* node){
+	pagenum_t pageidx = -1;
+	for(pagenum_t i=start; i!=end; i=(i+1)%100){
 		if(pages[i].node == node){
-			pagenum = i;
-			break;
+			return i;
 		}
 	}
-	if(pagenum == -1){
-		pagenum = end++;
+	return end++;
+}
+
+pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
+	pagenum_t pageidx = -1;
+	for(pagenum_t i=start; i!=end; i=(i+1)%100){
+		if(pages[i].node && pages[i].node->pagenum == pagenum){
+			return i;
+		}
 	}
-	page_t *page = pages+pagenum;
+	return end++;
+}
+
+void node_to_page(node* node){
+	pagenum_t pageidx = get_pageidx_by_node(node);
+
+	page_t *page = pages+pageidx;
 	page->page.parentPageNum = (pagenum_t)node->parent;
 	page->page.isLeaf = node->is_leaf;
 	page->page.numOfKeys = node->num_keys;
@@ -35,6 +47,43 @@ void node_to_page(node* node){
 		}
 	}
 	file_write_page(node->pagenum, page);
+}
+
+struct node* page_to_node(pagenum_t pagenum){
+	if(pagenum == 0) return NULL;
+		
+	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
+	int leaf_order = 31, internal_order = 248;
+	leaf_order = internal_order = 4;
+	page_t* page = pages+pageidx;
+	if(page->node && page->node->pagenum == pagenum) return page->node;
+	
+	file_read_page(pagenum, page);
+	struct node* node = malloc(sizeof(struct node));
+	page->node = node;
+	node->parent = (struct node*)(page->page.parentPageNum);
+	node->is_leaf = page->page.isLeaf;
+	node->num_keys = page->page.numOfKeys;
+	node->next = NULL;
+	node->pagenum = pagenum;
+	if(node -> is_leaf){
+		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
+		node->pointers = malloc(leaf_order * sizeof(void*));
+		for(int i=0; i<node->num_keys; i++){
+			node->keys[i] = page->leaf[i].key;
+			node->pointers[i] = malloc(sizeof(record));
+			strncpy(((record*)node->pointers[i])->value, page->leaf[i].value, 120);
+		}
+	}
+	else{
+		node->keys = malloc((internal_order - 1) * sizeof(int64_t));
+		node->pointers = malloc(internal_order * sizeof(void*));
+		for(int i=0; i<node->num_keys; i++){
+			node->keys[i] = page->internal[i].key;
+			node->pointers[i] = (void*)page->internal[i].pageNum;
+		}
+	}
+	return node;
 }
 
 int file_open(char* pathname){

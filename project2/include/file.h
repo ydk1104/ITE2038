@@ -52,6 +52,7 @@ typedef struct{
 #define TABLE_SIZE 1
 
 void node_to_page(struct node* node);
+struct node* page_to_node(pagenum_t pagenum);
 int file_open(char*);
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
