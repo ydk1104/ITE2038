@@ -20,7 +20,10 @@ int db_insert (int64_t key, char * value){
 	return 0;
 }
 int db_find (int64_t key, char * ret_val){
-	return 1;
+	record* ptr = find(header.header.rootPageNum, key, false);
+	if(!ptr) return 1;
+	strncpy(ret_val, ptr->value, 120);
+	return 0;
 }
 int db_delete (int64_t key){
 	return 1;
