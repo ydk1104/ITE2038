@@ -2,6 +2,40 @@
 #include<file.h>
 
 int table_id_to_fd[TABLE_SIZE];
+page_t pages[100];
+int start, end;
+
+void node_to_page(node* node){
+	pagenum_t pagenum = -1;
+	for(int i=start; i!=end; i=(i+1)%100){
+		if(pages[i].node == node){
+			pagenum = i;
+			break;
+		}
+	}
+	if(pagenum == -1){
+		pagenum = end++;
+	}
+	page_t *page = pages+pagenum;
+	page->page.parentPageNum = (pagenum_t)node->parent;
+	page->page.isLeaf = node->is_leaf;
+	page->page.numOfKeys = node->num_keys;
+	int leaf_order = 31, internal_order = 248;
+	leaf_order = internal_order = 4;
+	if(node -> is_leaf){
+		for(int i=0; i<node->num_keys; i++){
+			page->leaf[i].key = node->keys[i];
+			strncpy(page->leaf[i].value, ((record*)node->pointers[i])->value, 120);
+		}
+	}
+	else{
+		for(int i=0; i<node->num_keys; i++){
+			page->internal[i].key = node->keys[i];
+			page->internal[i].pageNum = (pagenum_t)node->pointers[i];
+		}
+	}
+	file_write_page(node->pagenum, page);
+}
 
 int file_open(char* pathname){
 	int fd;

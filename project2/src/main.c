@@ -4,22 +4,29 @@
 
 // MAIN
 
+void insert_test(int N){
+	char s[11] = "0123456789";
+	for(int i=0; i<N; i++){
+		db_insert(i, s+i);
+	}
+}
+
 int my_main(){
 	int tbl_id = open_table("out/out.txt");
-	pagenum_t num = file_alloc_page();
-	printf("num : %d\n", num);
 	page_t head = {0, };
 	file_read_page(0, &head);
 	printf("header page:%lx %lx %lx\n",
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
+	insert_test(1);
+	
 	return 0;
 }
 
 int main( int argc, char ** argv ) {
 
-//		return my_main();
+		return my_main();
 
     char * input_file;
     FILE * fp;
@@ -53,8 +60,8 @@ int main( int argc, char ** argv ) {
             exit(EXIT_FAILURE);
         }
         while (!feof(fp)) {
-            fscanf(fp, "%d\n", &input);
-            root = insert(root, input, input);
+            fscanf(fp, "%d %s", &input, input_value);
+            root = insert(root, input, input_value);
         }
         fclose(fp);
         print_tree(root);

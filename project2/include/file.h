@@ -2,6 +2,7 @@
 #define __file__
 
 // file.h
+#include<bpt.h>
 #include<fcntl.h>
 #include<stdint.h>
 #include<sys/types.h>
@@ -12,6 +13,7 @@ typedef struct{
 // in-memory page structure
 	union{
 		char byte[4096];
+		struct{
 			union{
 				struct{
 					uint64_t freePageNum;
@@ -21,7 +23,7 @@ typedef struct{
 				struct{
 					uint64_t nextFreePage;
 				}free;
-				union{
+				struct{
 					struct{
 						uint64_t parentPageNum;
 						uint32_t isLeaf;
@@ -29,16 +31,19 @@ typedef struct{
 						char reserved[104];
 						uint64_t pageNum;
 					}page;
-					struct{
-						uint64_t key;
-						uint64_t pageNum;
-					}internal[248];
-					struct{
-						uint64_t key;
-						char value[120];
-					}leaf[31];
-				}page;
-				uint64_t pageNum;
+					union{
+						struct{
+							uint64_t key;
+							uint64_t pageNum;
+						}internal[248];
+						struct{
+							uint64_t key;
+							char value[120];
+						}leaf[31];
+					};
+				};
+			};
+		struct node* node;
 		};
 	};
 }page_t;
@@ -46,6 +51,7 @@ typedef struct{
 #define PAGE_SIZE 4096
 #define TABLE_SIZE 1
 
+void node_to_page(struct node* node);
 int file_open(char*);
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();

@@ -3,6 +3,7 @@
 
 // Uncomment the line below if you are compiling on Windows.
 // #define WINDOWS
+#include <file.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -44,7 +45,6 @@
  * of the value field.
  */
 typedef struct record {
-    int64_t key;
 	char value[120];
 } record;
 
@@ -76,6 +76,8 @@ typedef struct record {
  * to data is always num_keys.  The
  * last leaf pointer points to the next leaf.
  */
+
+typedef uint64_t pagenum_t;
 typedef struct node {
     void ** pointers;
     uint64_t * keys;
@@ -83,6 +85,7 @@ typedef struct node {
     bool is_leaf;
     int num_keys;
     struct node * next; // Used for queue.
+	pagenum_t pagenum; // Used for disk-io.
 } node;
 
 // GLOBALS.

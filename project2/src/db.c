@@ -1,3 +1,4 @@
+#include<bpt.h>
 #include<db.h>
 #include<file.h>
 
@@ -7,7 +8,14 @@ int open_table (char *pathname){
 	return table_id;
 }
 int db_insert (int64_t key, char * value){
-	return 1;
+	page_t header;
+	file_read_page(0, &header);
+	node* root = insert((node*)header.header.rootPageNum, key, value);
+	node_to_page(root);
+	if(root->pagenum != header.header.rootPageNum){
+		header.header.rootPageNum = root->pagenum;
+		file_write_page(0, &header);
+	}
 }
 int db_find (int64_t key, char * ret_val){
 	return 1;
