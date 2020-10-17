@@ -132,14 +132,6 @@ void print_license( int licence_part );
 void usage_1( void );
 void usage_2( void );
 void usage_3( void );
-void enqueue( node * new_node );
-node * dequeue( void );
-int height( node * root );
-int path_to_root( node * root, node * child );
-void print_leaves( node * root );
-void print_tree( node * root );
-void find_and_print(node * root, int64_t key, bool verbose); 
-void find_and_print_range(node * root, int64_t range1, int64_t range2, bool verbose); 
 int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
         int64_t returned_keys[], void * returned_pointers[]); 
 node * find_leaf( node * root, int64_t key, bool verbose );
@@ -176,8 +168,5 @@ node * redistribute_nodes(node * root, node * n, node * neighbor,
         int64_t k_prime_index, int64_t k_prime);
 node * delete_entry( node * root, node * n, int64_t key, void * pointer );
 node * delete( node * root, int64_t key );
-
-void destroy_tree_nodes(node * root);
-node * destroy_tree(node * root);
 
 #endif /* __BPT_H__*/
