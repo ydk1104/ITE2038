@@ -83,10 +83,15 @@ typedef struct record {
 typedef uint64_t pagenum_t;
 typedef struct node {
 union{
-	void ** pointers;
-	pagenum_t *pages;
+struct{
+	record records[DEFAULT_LEAF_ORDER + 1];
+	uint64_t keys[DEFAULT_LEAF_ORDER];
+}leaf;
+struct{
+	pagenum_t pages[DEFAULT_INTERNAL_ORDER + 1];
+	uint64_t keys[DEFAULT_LEAF_ORDER];
+}internal;
 };
-    uint64_t * keys;
     pagenum_t parent;
     bool is_leaf;
     int num_keys;

@@ -17,7 +17,11 @@ pagenum_t get_pageidx_by_node(node* node){
 		if(temp==PAGE_POOL_SIZE) temp=0;
 		return temp++;
 	}
-	else return end++;
+	else{
+		pages[end].node = calloc(1, sizeof(node));
+		pages[end].node->keys = calloc(1, sizeof(4096));
+		return end++;
+	}
 
 }
 
@@ -32,7 +36,11 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 		if(temp==PAGE_POOL_SIZE) temp=0;
 		return temp++;
 	}
-	else return end++;
+	else{
+		pages[end].node = malloc(sizeof(node));
+		pages[end].node->keys = malloc(sizeof(4096));
+		return end++;
+	}
 }
 
 void node_to_page(node* node){
@@ -74,25 +82,29 @@ struct node* page_to_node(pagenum_t pagenum){
 	if(page->node && page->node->pagenum == pagenum) return page->node;
 	
 	file_read_page(pagenum, page);
-	struct node* node = malloc(sizeof(struct node));
-	page->node = node;
+	struct node* node = page->node;
 	node->parent = page->page.parentPageNum;
 	node->is_leaf = page->page.isLeaf;
 	node->num_keys = page->page.numOfKeys;
 	node->pagenum = pagenum;
 	if(node -> is_leaf){
-		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
-		node->pointers = malloc(leaf_order * sizeof(void*));
+//		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
+//		node->pointers = malloc(leaf_order * sizeof(void*));
+//		node->keys = node->pages + (leaf_order * sizeof(void*) / sizeof(pagenum_t));	
+		node->pages = (pagenum_t*)node->keys + (leaf_order);
 		node->pages[leaf_order-1] = page->page.pageNum;
 		for(int i=0; i<node->num_keys; i++){
 			node->keys[i] = page->leaf[i].key;
-			node->pointers[i] = malloc(sizeof(record));
+//			node->pointers[i] = malloc(sizeof(record));
+			node->pointers[i] = node->pointers + leaf_order + sizeof(record) / sizeof(pagenum_t);
 			strncpy(((record*)node->pointers[i])->value, page->leaf[i].value, 120);
 		}
 	}
 	else{
-		node->keys = malloc((internal_order - 1) * sizeof(int64_t));
-		node->pages = malloc(internal_order * sizeof(pagenum_t*));
+//		node->keys = malloc((internal_order - 1) * sizeof(int64_t));
+//		node->pages = malloc(internal_order * sizeof(pagenum_t*));
+//		node->keys = node->pages + (internal_order * sizeof(pagenum_t) / sizeof(pagenum_t));
+		node->pages = (pagenum_t*)node->keys + (internal_order);
 		node->pages[0] = page->page.pageNum;
 		for(int i=0; i<node->num_keys; i++){
 			node->keys[i] = page->internal[i].key;

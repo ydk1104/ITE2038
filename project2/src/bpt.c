@@ -182,12 +182,12 @@ int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose
     num_found = 0;
     node * n = find_leaf( root, key_start, verbose );
     if (n == NULL) return 0;
-    for (i = 0; i < n->num_keys && n->keys[i] < key_start; i++) ;
+    for (i = 0; i < n->num_keys && n->leaf.keys[i] < key_start; i++) ;
     if (i == n->num_keys) return 0;
     while (n != NULL) {
-        for ( ; i < n->num_keys && n->keys[i] <= key_end; i++) {
-            returned_keys[num_found] = n->keys[i];
-            returned_pointers[num_found] = n->pointers[i];
+        for ( ; i < n->num_keys && n->leaf.keys[i] <= key_end; i++) {
+            returned_keys[num_found] = n->leaf.keys[i];
+            returned_pointers[num_found] = n->leaf.records[i];
             num_found++;
         }
         n = n->pointers[leaf_order - 1];
@@ -224,7 +224,7 @@ node * find_leaf( pagenum_t root, int64_t key, bool verbose ) {
         }
         if (verbose)
             printf("%d ->\n", i);
-        c = page_to_node(c->pages[i]);
+        c = page_to_node(c->internal.pages[i]);
     }
     if (verbose) {
         printf("Leaf [");
@@ -286,26 +286,11 @@ record * make_record(const char* value) {
  */
 node * make_node( void ) {
 	node * new_node;
-    new_node = malloc(sizeof(node));
-    if (new_node == NULL) {
-        perror("Node creation.");
-        exit(EXIT_FAILURE);
-    }
-    new_node->keys = malloc( (internal_order - 1) * sizeof(int64_t) );
-    if (new_node->keys == NULL) {
-        perror("New node keys array.");
-        exit(EXIT_FAILURE);
-    }
-    new_node->pointers = malloc( internal_order * sizeof(void *) );
-    if (new_node->pointers == NULL) {
-        perror("New node pointers array.");
-        exit(EXIT_FAILURE);
-    }
+	pagenum_t pagenum = file_alloc_page();
+ 	new_node = page_to_node(pagenum);
     new_node->is_leaf = false;
     new_node->num_keys = 0;
     new_node->parent = 0;
-
-	new_node->pagenum = file_alloc_page();
     return new_node;
 }
 
@@ -314,10 +299,6 @@ node * make_node( void ) {
  */
 node * make_leaf( void ) {
     node * leaf = make_node();
- 	free(leaf->keys);
-	leaf->keys = malloc( (leaf_order - 1) * sizeof(int64_t) );
-	free(leaf->pointers);
-	leaf->pointers = malloc( leaf_order * sizeof(void *) );
 	leaf->is_leaf = true;
     return leaf;
 }
@@ -331,7 +312,7 @@ int get_left_index(node * parent, pagenum_t pagenum) {
 
     int left_index = 0;
     while (left_index <= parent->num_keys && 
-            parent->pages[left_index] != pagenum)
+            parent->internal.pages[left_index] != pagenum)
         left_index++;
 	return left_index;
 }
@@ -418,8 +399,8 @@ pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t 
     free(temp_pointers);
     free(temp_keys);
 
-    new_leaf->pages[leaf_order - 1] = leaf->pages[leaf_order - 1];
-    leaf->pages[leaf_order - 1] = new_leaf->pagenum;
+    new_leaf->leaf.records[leaf_order - 1] = leaf->leaf.records[leaf_order - 1];
+    leaf->leaf.records[leaf_order - 1] = new_leaf->pagenum;
 
     for (i = leaf->num_keys; i < leaf_order - 1; i++)
         leaf->pointers[i] = NULL;
@@ -445,11 +426,11 @@ pagenum_t insert_into_node(pagenum_t root, node * n,
     int i;
 
     for (i = n->num_keys; i > left_index; i--) {
-        n->pages[i + 1] = n->pages[i];
-        n->keys[i] = n->keys[i - 1];
+        n->internal.pages[i + 1] = n->internal.pages[i];
+        n->internal.keys[i] = n->internal.keys[i - 1];
     }
-    n->pages[left_index + 1] = right->pagenum;
-    n->keys[left_index] = key;
+    n->internal.pages[left_index + 1] = right->pagenum;
+    n->internal.keys[left_index] = key;
     n->num_keys++;
 	node_to_page(n);
     return root;
@@ -490,12 +471,12 @@ pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int 
 
     for (i = 0, j = 0; i < old_node->num_keys + 1; i++, j++) {
         if (j == left_index + 1) j++;
-        temp_pointers[j] = old_node->pages[i];
+        temp_pointers[j] = old_node->internal.pages[i];
     }
 
     for (i = 0, j = 0; i < old_node->num_keys; i++, j++) {
         if (j == left_index) j++;
-        temp_keys[j] = old_node->keys[i];
+        temp_keys[j] = old_node->internal.keys[i];
     }
 
     temp_pointers[left_index + 1] = right->pagenum;
@@ -509,23 +490,23 @@ pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int 
     new_node = make_node();
     old_node->num_keys = 0;
     for (i = 0; i < split - 1; i++) {
-        old_node->pages[i] = temp_pointers[i];
-        old_node->keys[i] = temp_keys[i];
+        old_node->internal.pages[i] = temp_pointers[i];
+        old_node->internal.keys[i] = temp_keys[i];
         old_node->num_keys++;
     }
-    old_node->pages[i] = temp_pointers[i];
+    old_node->internal.pages[i] = temp_pointers[i];
     k_prime = temp_keys[split - 1];
     for (++i, j = 0; i < internal_order; i++, j++) {
-        new_node->pages[j] = temp_pointers[i];
+        new_node->internal.pages[j] = temp_pointers[i];
         new_node->keys[j] = temp_keys[i];
         new_node->num_keys++;
     }
-    new_node->pages[j] = temp_pointers[i];
+    new_node->internal.pages[j] = temp_pointers[i];
     free(temp_pointers);
     free(temp_keys);
     new_node->parent = old_node->parent;
     for (i = 0; i <= new_node->num_keys; i++) {
-		child = page_to_node(new_node->pages[i]);
+		child = page_to_node(new_node->internal.pages[i]);
         child->parent = new_node->pagenum;
 		node_to_page(child);
     }
@@ -588,9 +569,9 @@ pagenum_t insert_into_parent(pagenum_t root, node * left, int64_t key, node * ri
 pagenum_t insert_into_new_root(node * left, int64_t key, node * right) {
 
     node * root = make_node();
-    root->keys[0] = key;
-    root->pages[0] = left->pagenum;
-    root->pages[1] = right->pagenum;
+    root->internal.keys[0] = key;
+    root->internal.pages[0] = left->pagenum;
+    root->internal.pages[1] = right->pagenum;
     root->num_keys++;
     root->parent = 0;
     left->parent = root->pagenum;
@@ -609,9 +590,9 @@ pagenum_t insert_into_new_root(node * left, int64_t key, node * right) {
 pagenum_t start_new_tree(int64_t key, record * pointer) {
 
     node * root = make_leaf();
-    root->keys[0] = key;
-    root->pointers[0] = pointer;
-    root->pointers[leaf_order - 1] = NULL;
+    root->leaf.keys[0] = key;
+    root->leaf.records[0] = pointer;
+    root->leaf.records[leaf_order - 1] = NULL;
     root->parent = 0;
     root->num_keys++;
 	node_to_page(root);
@@ -696,7 +677,7 @@ int get_neighbor_index( node * n ) {
      */
 	node* parent = page_to_node(n->parent);
     for (i = 0; i <= parent->num_keys; i++)
-        if (parent->pages[i] == n->pagenum)
+        if (parent->internal.pages[i] == n->pagenum)
             return i - 1;
 
     // Error state.
@@ -723,7 +704,7 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     i = 0;
 	if(n->is_leaf) while(n->pointers[i] != pointer)
 		i++;
-	else while (n->pages[i] != pointer->pagenum)
+	else while (n->internal.pages[i] != pointer->pagenum)
         i++;
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
@@ -765,7 +746,7 @@ pagenum_t adjust_root(pagenum_t root_num) {
     // as the new root.
 
     if (!root->is_leaf) {
-        new_root = page_to_node(root->pages[0]);
+        new_root = page_to_node(root->internal.pages[0]);
         new_root->parent = 0;
     }
 
@@ -824,15 +805,15 @@ pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor, int neighbor
         /* Append k_prime.
          */
 
-        neighbor->keys[neighbor_insertion_index] = k_prime;
+        neighbor->internal.keys[neighbor_insertion_index] = k_prime;
         neighbor->num_keys++;
 
 
         n_end = n->num_keys;
 
         for (i = neighbor_insertion_index + 1, j = 0; j < n_end; i++, j++) {
-            neighbor->keys[i] = n->keys[j];
-            neighbor->pointers[i] = n->pointers[j];
+            neighbor->internal.keys[i] = n->internal.keys[j];
+            neighbor->internal.pages[i] = n->internal.pages[j];
             neighbor->num_keys++;
             n->num_keys--;
         }
@@ -841,13 +822,13 @@ pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor, int neighbor
          * one more than the number of keys.
          */
 
-        neighbor->pointers[i] = n->pointers[j];
+        neighbor->internal.pointers[i] = n->internal.pointers[j];
 
         /* All children must now point up to the same parent.
          */
 
         for (i = 0; i < neighbor->num_keys + 1; i++) {
-            tmp = page_to_node(neighbor->pages[i]);
+            tmp = page_to_node(neighbor->internal.pages[i]);
             tmp->parent = neighbor->pagenum;
 			node_to_page(tmp);
         }
@@ -861,11 +842,11 @@ pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor, int neighbor
 
     else {
         for (i = neighbor_insertion_index, j = 0; j < n->num_keys; i++, j++) {
-            neighbor->keys[i] = n->keys[j];
-            neighbor->pointers[i] = n->pointers[j];
+            neighbor->leaf.keys[i] = n->leaf.keys[j];
+            neighbor->leaf.records[i] = n->leaf.records[j];
             neighbor->num_keys++;
         }
-        neighbor->pointers[leaf_order - 1] = n->pointers[leaf_order - 1];
+        neighbor->leaf.records[leaf_order - 1] = n->leaf.records[leaf_order - 1];
     }
 	
 	node_to_page(neighbor);
@@ -899,25 +880,25 @@ pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor, int neig
 
     if (neighbor_index != -1) {
         if (!n->is_leaf)
-            n->pointers[n->num_keys + 1] = n->pointers[n->num_keys];
+            n->internal.pages[n->num_keys + 1] = n->internal.pages[n->num_keys];
         for (i = n->num_keys; i > 0; i--) {
             n->keys[i] = n->keys[i - 1];
             n->pointers[i] = n->pointers[i - 1];
         }
         if (!n->is_leaf) {
-            n->pointers[0] = neighbor->pointers[neighbor->num_keys];
-            tmp = page_to_node(n->pages[0]);
+            n->internal.pointers[0] = neighbor->internals.pages[neighbor->num_keys];
+            tmp = page_to_node(n->internal.pages[0]);
             tmp->parent = n->pagenum;
 			node_to_page(tmp);
-            neighbor->pointers[neighbor->num_keys] = NULL;
-            n->keys[0] = k_prime;
-            parent->keys[k_prime_index] = neighbor->keys[neighbor->num_keys - 1];
+            neighbor->internal.pages[neighbor->num_keys] = NULL;
+            n->internal.keys[0] = k_prime;
+            parent->internal.keys[k_prime_index] = neighbor->internal.keys[neighbor->num_keys - 1];
         }
         else {
-            n->pointers[0] = neighbor->pointers[neighbor->num_keys - 1];
-            neighbor->pointers[neighbor->num_keys - 1] = NULL;
-            n->keys[0] = neighbor->keys[neighbor->num_keys - 1];
-			parent->keys[k_prime_index] = n->keys[0];
+            n->leaf.pointers[0] = neighbor->leaf.pointers[neighbor->num_keys - 1];
+            neighbor->leaf.pointers[neighbor->num_keys - 1] = NULL;
+            n->leaf.keys[0] = neighbor->leaf.keys[neighbor->num_keys - 1];
+			parent->internal.keys[k_prime_index] = n->leaf.keys[0];
         }
     }
 
@@ -929,24 +910,24 @@ pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor, int neig
 
     else {  
         if (n->is_leaf) {
-            n->keys[n->num_keys] = neighbor->keys[0];
-            n->pointers[n->num_keys] = neighbor->pointers[0];
-            parent->keys[k_prime_index] = neighbor->keys[1];
+            n->leaf.keys[n->num_keys] = neighbor->leaf.keys[0];
+            n->leaf.pointers[n->num_keys] = neighbor->leaf.pointers[0];
+            parent->internal.keys[k_prime_index] = neighbor->leaf.keys[1];
         }
         else {
-            n->keys[n->num_keys] = k_prime;
-            n->pointers[n->num_keys + 1] = neighbor->pointers[0];
-            tmp = page_to_node(n->pages[n->num_keys + 1]);
+            n->internal.keys[n->num_keys] = k_prime;
+            n->internal.pages[n->num_keys + 1] = neighbor->internal.pages[0];
+            tmp = page_to_node(n->internal.pages[n->num_keys + 1]);
             tmp->parent = n->pagenum;
 			node_to_page(tmp);
-            parent->keys[k_prime_index] = neighbor->keys[0];
+            parent->internal.keys[k_prime_index] = neighbor->internal.keys[0];
         }
         for (i = 0; i < neighbor->num_keys - 1; i++) {
             neighbor->keys[i] = neighbor->keys[i + 1];
             neighbor->pointers[i] = neighbor->pointers[i + 1];
         }
         if (!n->is_leaf)
-            neighbor->pointers[i] = neighbor->pointers[i + 1];
+            neighbor->internal.pages[i] = neighbor->internal.pages[i + 1];
     }
 
     /* n now has one more key and one more pointer;
@@ -1020,8 +1001,8 @@ pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer ) 
     k_prime_index = neighbor_index == -1 ? 0 : neighbor_index;
 	node* parent = page_to_node(n->parent);
     k_prime = parent->keys[k_prime_index];
-    neighbor = neighbor_index == -1 ? page_to_node(parent->pages[1]) : 
-        page_to_node(parent->pages[neighbor_index]);
+    neighbor = neighbor_index == -1 ? page_to_node(parent->internal.pages[1]) : 
+        page_to_node(parent->internal.pages[neighbor_index]);
 
     capacity = n->is_leaf ? leaf_order : internal_order - 1;
 
