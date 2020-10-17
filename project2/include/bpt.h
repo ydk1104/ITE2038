@@ -90,7 +90,6 @@ union{
     struct node * parent;
     bool is_leaf;
     int num_keys;
-    struct node * next; // Used for queue.
 	pagenum_t pagenum; // Used for disk-io.
 } node;
 
