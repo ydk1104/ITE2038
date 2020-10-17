@@ -170,10 +170,10 @@ pagenum_t insert( node * root, int64_t key, const char* value );
 int get_neighbor_index( node * n );
 node * adjust_root(node * root);
 node * coalesce_nodes(node * root, node * n, node * neighbor,
-                      int neighbor_index, int k_prime);
+                      int neighbor_index, int64_t k_prime);
 node * redistribute_nodes(node * root, node * n, node * neighbor,
                           int neighbor_index,
-        int k_prime_index, int k_prime);
+        int64_t k_prime_index, int64_t k_prime);
 node * delete_entry( node * root, node * n, int64_t key, void * pointer );
 node * delete( node * root, int64_t key );
 

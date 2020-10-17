@@ -886,8 +886,9 @@ int get_neighbor_index( node * n ) {
      * If n is the leftmost child, this means
      * return -1.
      */
-    for (i = 0; i <= n->parent->num_keys; i++)
-        if (n->parent->pages[i] == n->pagenum)
+	node* parent = page_to_node(n->parent);
+    for (i = 0; i <= parent->num_keys; i++)
+        if (parent->pages[i] == n->pagenum)
             return i - 1;
 
     // Error state.
@@ -912,7 +913,9 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     // First determine number of pointers.
     num_pointers = n->is_leaf ? n->num_keys : n->num_keys + 1;
     i = 0;
-    while (n->pointers[i] != pointer)
+	if(n->is_leaf) while(n->pointers[i] != pointer)
+		i++;
+	else while (n->pages[i] != pointer->pagenum)
         i++;
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
@@ -929,7 +932,7 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     else
         for (i = n->num_keys + 1; i < leaf_order; i++)
             n->pointers[i] = NULL;
-
+	node_to_page(n);
     return n;
 }
 
@@ -942,9 +945,9 @@ node * adjust_root(node * root) {
      * Key and pointer have already been deleted,
      * so nothing to be done.
      */
-
+	root = page_to_node(root);
     if (root->num_keys > 0)
-        return root;
+        return root->pagenum;
 
     /* Case: empty root. 
      */
@@ -954,7 +957,7 @@ node * adjust_root(node * root) {
     // as the new root.
 
     if (!root->is_leaf) {
-        new_root = root->pointers[0];
+        new_root = page_to_node(root->pointers[0]);
         new_root->parent = NULL;
     }
 
@@ -968,7 +971,8 @@ node * adjust_root(node * root) {
     free(root->pointers);
     free(root);
 
-    return new_root;
+	node_to_page(new_root);
+    return new_root && new_root->pagenum;
 }
 
 
@@ -978,7 +982,7 @@ node * adjust_root(node * root) {
  * can accept the additional entries
  * without exceeding the maximum.
  */
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int k_prime) {
+node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int64_t k_prime) {
 
     int i, j, neighbor_insertion_index, n_end;
     node * tmp;
@@ -1034,8 +1038,9 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
          */
 
         for (i = 0; i < neighbor->num_keys + 1; i++) {
-            tmp = (node *)neighbor->pointers[i];
-            tmp->parent = neighbor;
+            tmp = page_to_node(neighbor->pointers[i]);
+            tmp->parent = neighbor->pagenum;
+			node_to_page(tmp);
         }
     }
 
@@ -1053,9 +1058,12 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
         }
         neighbor->pointers[leaf_order - 1] = n->pointers[leaf_order - 1];
     }
+	
+	node_to_page(neighbor);
 
-    root = delete_entry(root, n->parent, k_prime, n);
-    free(n->keys);
+    root = delete_entry(root, page_to_node(n->parent), k_prime, n);
+	file_free_page(n->pagenum);
+	free(n->keys);
     free(n->pointers);
     free(n); 
     return root;
@@ -1069,10 +1077,12 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
  * maximum
  */
 node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
-        int k_prime_index, int k_prime) {  
+        int64_t k_prime_index, int64_t k_prime) {  
 
     int i;
     node * tmp;
+
+	printf("redistribute\n");
 
     /* Case: n has a neighbor to the left. 
      * Pull the neighbor's last key-pointer pair over
@@ -1150,7 +1160,7 @@ node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
     int min_keys;
     node * neighbor;
     int neighbor_index;
-    int k_prime_index, k_prime;
+    int64_t k_prime_index, k_prime;
     int capacity;
 
     // Remove key and pointer from node.
@@ -1160,7 +1170,7 @@ node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
     /* Case:  deletion from the root. 
      */
 
-    if (n == root) 
+    if (n->pagenum == root) 
         return adjust_root(root);
 
 
@@ -1195,9 +1205,11 @@ node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
 
     neighbor_index = get_neighbor_index( n );
     k_prime_index = neighbor_index == -1 ? 0 : neighbor_index;
-    k_prime = n->parent->keys[k_prime_index];
-    neighbor = neighbor_index == -1 ? n->parent->pointers[1] : 
-        n->parent->pointers[neighbor_index];
+	node* parent = page_to_node(n->parent);
+    k_prime = parent->keys[k_prime_index];
+    neighbor = neighbor_index == -1 ? parent->pointers[1] : 
+        parent->pointers[neighbor_index];
+	neighbor = page_to_node(neighbor);
 
     capacity = n->is_leaf ? leaf_order : internal_order - 1;
 

@@ -10,6 +10,9 @@ void insert_test(int N){
 		int error = db_insert(i, s+(i%10));
 //		if(!error) printf("%d\n", i);
 	}
+	for(int i=0; i<N; i++){
+		int error = db_delete(i);
+	}
 }
 
 int my_main(){

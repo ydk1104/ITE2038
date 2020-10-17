@@ -36,6 +36,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 }
 
 void node_to_page(node* node){
+	if(node == NULL) return;
 	pagenum_t pageidx = get_pageidx_by_node(node);
 
 	page_t *page = pages+pageidx;
