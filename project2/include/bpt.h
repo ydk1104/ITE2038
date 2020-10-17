@@ -87,7 +87,7 @@ union{
 	pagenum_t *pages;
 };
     uint64_t * keys;
-    struct node * parent;
+    pagenum_t parent;
     bool is_leaf;
     int num_keys;
 	pagenum_t pagenum; // Used for disk-io.
@@ -124,10 +124,10 @@ void print_license( int licence_part );
 void usage_1( void );
 void usage_2( void );
 void usage_3( void );
-int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
+int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
         int64_t returned_keys[], void * returned_pointers[]); 
-node * find_leaf( node * root, int64_t key, bool verbose );
-record * find( node * root, int64_t key, bool verbose );
+node * find_leaf( pagenum_t root, int64_t key, bool verbose );
+record * find( pagenum_t root, int64_t key, bool verbose );
 int cut( int length );
 
 // Insertion.
@@ -135,19 +135,19 @@ int cut( int length );
 record * make_record(const char* value);
 node * make_node( void );
 node * make_leaf( void );
-int get_left_index(node * parent, node * left);
+int get_left_index(node * parent, pagenum_t pagenum);
 node * insert_into_leaf( node * leaf, int64_t key, record * pointer );
-node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key,
+node * insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key,
                                         record * pointer);
-node * insert_into_node(node * root, node * parent, 
+node * insert_into_node(pagenum_t root, node * parent, 
         int left_index, int64_t key, node * right);
-node * insert_into_node_after_splitting(node * root, node * parent,
+node * insert_into_node_after_splitting(pagenum_t root, node * parent,
                                         int left_index,
         int64_t key, node * right);
-node * insert_into_parent(node * root, node * left, int64_t key, node * right);
-node * insert_into_new_root(node * left, int64_t key, node * right);
-node * start_new_tree(int64_t key, record * pointer);
-pagenum_t insert( node * root, int64_t key, const char* value );
+node * insert_into_parent(pagenum_t root, node * left, int64_t key, node * right);
+pagenum_t insert_into_new_root(node * left, int64_t key, node * right);
+pagenum_t start_new_tree(int64_t key, record * pointer);
+pagenum_t insert( pagenum_t root, int64_t key, const char* value );
 
 // Deletion.
 

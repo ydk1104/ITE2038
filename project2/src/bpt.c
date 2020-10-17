@@ -176,7 +176,7 @@ void usage_3( void ) {
  * returned_keys and returned_pointers, and returns the number of
  * entries found.
  */
-int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
+int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
         int64_t returned_keys[], void * returned_pointers[]) {
     int i, num_found;
     num_found = 0;
@@ -202,7 +202,7 @@ int find_range( node * root, int64_t key_start, int64_t key_end, bool verbose,
  * if the verbose flag is set.
  * Returns the leaf containing the given key.
  */
-node * find_leaf( node * root, int64_t key, bool verbose ) {
+node * find_leaf( pagenum_t root, int64_t key, bool verbose ) {
     int i = 0;
     node * c = page_to_node(root);
     if (c == NULL) {
@@ -239,7 +239,7 @@ node * find_leaf( node * root, int64_t key, bool verbose ) {
 /* Finds and returns the record to which
  * a key refers.
  */
-record * find( node * root, int64_t key, bool verbose ) {
+record * find( pagenum_t root, int64_t key, bool verbose ) {
     int i = 0;
     node * c = find_leaf( root, key, verbose );
     if (c == NULL) return NULL;
@@ -304,7 +304,6 @@ node * make_node( void ) {
     new_node->is_leaf = false;
     new_node->num_keys = 0;
     new_node->parent = NULL;
-    new_node->next = NULL;
 
 	new_node->pagenum = file_alloc_page();
     return new_node;
@@ -325,14 +324,14 @@ node * make_leaf( void ) {
 
 
 /* Helper function used in insert_into_parent
- * to find the index of the parent's pointer to 
+ * to find the index of the parent's pagenum to 
  * the node to the left of the key to be inserted.
  */
-int get_left_index(node * parent, node * left) {
+int get_left_index(node * parent, pagenum_t pagenum) {
 
     int left_index = 0;
     while (left_index <= parent->num_keys && 
-            parent->pages[left_index] != left->pagenum)
+            parent->pages[left_index] != pagenum)
         left_index++;
 	return left_index;
 }
@@ -366,7 +365,7 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
  * the tree's order, causing the leaf to be split
  * in half.
  */
-node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key, record * pointer) {
+node * insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, record * pointer) {
 
     node * new_leaf;
     int * temp_keys;
@@ -441,7 +440,7 @@ node * insert_into_leaf_after_splitting(node * root, node * leaf, int64_t key, r
  * into a node into which these can fit
  * without violating the B+ tree properties.
  */
-node * insert_into_node(node * root, node * n, 
+node * insert_into_node(pagenum_t root, node * n, 
         int left_index, int64_t key, node * right) {
     int i;
 
@@ -461,7 +460,7 @@ node * insert_into_node(node * root, node * n,
  * into a node, causing the node's size to exceed
  * the order, and causing the node to split into two.
  */
-node * insert_into_node_after_splitting(node * root, node * old_node, int left_index, 
+node * insert_into_node_after_splitting(pagenum_t root, node * old_node, int left_index, 
         int64_t key, node * right) {
 
     int i, j, split, k_prime;
@@ -545,7 +544,7 @@ node * insert_into_node_after_splitting(node * root, node * old_node, int left_i
 /* Inserts a new node (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-node * insert_into_parent(node * root, node * left, int64_t key, node * right) {
+node * insert_into_parent(pagenum_t root, node * left, int64_t key, node * right) {
 
     int left_index;
     node * parent;
@@ -586,7 +585,7 @@ node * insert_into_parent(node * root, node * left, int64_t key, node * right) {
  * and inserts the appropriate key into
  * the new root.
  */
-node * insert_into_new_root(node * left, int64_t key, node * right) {
+pagenum_t insert_into_new_root(node * left, int64_t key, node * right) {
 
     node * root = make_node();
     root->keys[0] = key;
@@ -607,7 +606,7 @@ node * insert_into_new_root(node * left, int64_t key, node * right) {
 /* First insertion:
  * start a new tree.
  */
-node * start_new_tree(int64_t key, record * pointer) {
+pagenum_t start_new_tree(int64_t key, record * pointer) {
 
     node * root = make_leaf();
     root->keys[0] = key;
@@ -627,7 +626,7 @@ node * start_new_tree(int64_t key, record * pointer) {
  * however necessary to maintain the B+ tree
  * properties.
  */
-pagenum_t insert( node * root, int64_t key, const char* value ) {
+pagenum_t insert( pagenum_t root, int64_t key, const char* value ) {
 
     record * pointer;
     node * leaf;
@@ -649,7 +648,7 @@ pagenum_t insert( node * root, int64_t key, const char* value ) {
      * Start a new tree.
      */
 
-    if (root == NULL) 
+    if (root == 0) 
         return start_new_tree(key, pointer);
 
 

@@ -79,7 +79,6 @@ struct node* page_to_node(pagenum_t pagenum){
 	node->parent = (struct node*)(page->page.parentPageNum);
 	node->is_leaf = page->page.isLeaf;
 	node->num_keys = page->page.numOfKeys;
-	node->next = NULL;
 	node->pagenum = pagenum;
 	if(node -> is_leaf){
 		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
