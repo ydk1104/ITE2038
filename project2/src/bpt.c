@@ -1082,8 +1082,7 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
 
     int i;
     node * tmp;
-
-	printf("redistribute\n");
+	node* parent = page_to_node(n->parent);
 
     /* Case: n has a neighbor to the left. 
      * Pull the neighbor's last key-pointer pair over
@@ -1099,17 +1098,18 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
         }
         if (!n->is_leaf) {
             n->pointers[0] = neighbor->pointers[neighbor->num_keys];
-            tmp = (node *)n->pointers[0];
-            tmp->parent = n;
+            tmp = page_to_node(n->pages[0]);
+            tmp->parent = n->pagenum;
+			node_to_page(tmp);
             neighbor->pointers[neighbor->num_keys] = NULL;
             n->keys[0] = k_prime;
-            n->parent->keys[k_prime_index] = neighbor->keys[neighbor->num_keys - 1];
+            parent->keys[k_prime_index] = neighbor->keys[neighbor->num_keys - 1];
         }
         else {
             n->pointers[0] = neighbor->pointers[neighbor->num_keys - 1];
             neighbor->pointers[neighbor->num_keys - 1] = NULL;
             n->keys[0] = neighbor->keys[neighbor->num_keys - 1];
-            n->parent->keys[k_prime_index] = n->keys[0];
+			parent->keys[k_prime_index] = n->keys[0];
         }
     }
 
@@ -1123,14 +1123,15 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
         if (n->is_leaf) {
             n->keys[n->num_keys] = neighbor->keys[0];
             n->pointers[n->num_keys] = neighbor->pointers[0];
-            n->parent->keys[k_prime_index] = neighbor->keys[1];
+            parent->keys[k_prime_index] = neighbor->keys[1];
         }
         else {
             n->keys[n->num_keys] = k_prime;
             n->pointers[n->num_keys + 1] = neighbor->pointers[0];
-            tmp = (node *)n->pointers[n->num_keys + 1];
-            tmp->parent = n;
-            n->parent->keys[k_prime_index] = neighbor->keys[0];
+            tmp = page_to_node(n->pages[n->num_keys + 1]);
+            tmp->parent = n->pagenum;
+			node_to_page(tmp);
+            parent->keys[k_prime_index] = neighbor->keys[0];
         }
         for (i = 0; i < neighbor->num_keys - 1; i++) {
             neighbor->keys[i] = neighbor->keys[i + 1];
@@ -1146,6 +1147,9 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
 
     n->num_keys++;
     neighbor->num_keys--;
+	node_to_page(n);
+	node_to_page(neighbor);
+	node_to_page(parent);
 
     return root;
 }
