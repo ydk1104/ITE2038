@@ -137,14 +137,14 @@ node * make_node( void );
 node * make_leaf( void );
 int get_left_index(node * parent, pagenum_t pagenum);
 node * insert_into_leaf( node * leaf, int64_t key, record * pointer );
-node * insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key,
+pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key,
                                         record * pointer);
-node * insert_into_node(pagenum_t root, node * parent, 
+pagenum_t insert_into_node(pagenum_t root, node * parent, 
         int left_index, int64_t key, node * right);
-node * insert_into_node_after_splitting(pagenum_t root, node * parent,
+pagenum_t insert_into_node_after_splitting(pagenum_t root, node * parent,
                                         int left_index,
         int64_t key, node * right);
-node * insert_into_parent(pagenum_t root, node * left, int64_t key, node * right);
+pagenum_t insert_into_parent(pagenum_t root, node * left, int64_t key, node * right);
 pagenum_t insert_into_new_root(node * left, int64_t key, node * right);
 pagenum_t start_new_tree(int64_t key, record * pointer);
 pagenum_t insert( pagenum_t root, int64_t key, const char* value );
@@ -152,13 +152,13 @@ pagenum_t insert( pagenum_t root, int64_t key, const char* value );
 // Deletion.
 
 int get_neighbor_index( node * n );
-node * adjust_root(node * root);
-node * coalesce_nodes(node * root, node * n, node * neighbor,
+pagenum_t adjust_root(pagenum_t root);
+pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor,
                       int neighbor_index, int64_t k_prime);
-node * redistribute_nodes(node * root, node * n, node * neighbor,
+pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor,
                           int neighbor_index,
         int64_t k_prime_index, int64_t k_prime);
-node * delete_entry( node * root, node * n, int64_t key, void * pointer );
-node * delete( node * root, int64_t key );
+pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer );
+pagenum_t delete( pagenum_t root, int64_t key );
 
 #endif /* __BPT_H__*/

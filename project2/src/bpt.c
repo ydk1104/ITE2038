@@ -303,7 +303,7 @@ node * make_node( void ) {
     }
     new_node->is_leaf = false;
     new_node->num_keys = 0;
-    new_node->parent = NULL;
+    new_node->parent = 0;
 
 	new_node->pagenum = file_alloc_page();
     return new_node;
@@ -365,7 +365,7 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
  * the tree's order, causing the leaf to be split
  * in half.
  */
-node * insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, record * pointer) {
+pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, record * pointer) {
 
     node * new_leaf;
     int * temp_keys;
@@ -440,7 +440,7 @@ node * insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key
  * into a node into which these can fit
  * without violating the B+ tree properties.
  */
-node * insert_into_node(pagenum_t root, node * n, 
+pagenum_t insert_into_node(pagenum_t root, node * n, 
         int left_index, int64_t key, node * right) {
     int i;
 
@@ -460,7 +460,7 @@ node * insert_into_node(pagenum_t root, node * n,
  * into a node, causing the node's size to exceed
  * the order, and causing the node to split into two.
  */
-node * insert_into_node_after_splitting(pagenum_t root, node * old_node, int left_index, 
+pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int left_index, 
         int64_t key, node * right) {
 
     int i, j, split, k_prime;
@@ -544,7 +544,7 @@ node * insert_into_node_after_splitting(pagenum_t root, node * old_node, int lef
 /* Inserts a new node (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-node * insert_into_parent(pagenum_t root, node * left, int64_t key, node * right) {
+pagenum_t insert_into_parent(pagenum_t root, node * left, int64_t key, node * right) {
 
     int left_index;
     node * parent;
@@ -564,7 +564,7 @@ node * insert_into_parent(pagenum_t root, node * left, int64_t key, node * right
      * node.
      */
 
-    left_index = get_left_index(parent, left);
+    left_index = get_left_index(parent, left->pagenum);
 
 
     /* Simple case: the new key fits into the node. 
@@ -592,7 +592,7 @@ pagenum_t insert_into_new_root(node * left, int64_t key, node * right) {
     root->pages[0] = left->pagenum;
     root->pages[1] = right->pagenum;
     root->num_keys++;
-    root->parent = NULL;
+    root->parent = 0;
     left->parent = root->pagenum;
     right->parent = root->pagenum;
 	node_to_page(left);
@@ -612,7 +612,7 @@ pagenum_t start_new_tree(int64_t key, record * pointer) {
     root->keys[0] = key;
     root->pointers[0] = pointer;
     root->pointers[leaf_order - 1] = NULL;
-    root->parent = NULL;
+    root->parent = 0;
     root->num_keys++;
 	node_to_page(root);
     return root->pagenum;
@@ -745,17 +745,17 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
 }
 
 
-node * adjust_root(node * root) {
+pagenum_t adjust_root(pagenum_t root_num) {
 
-    node * new_root;
+    node * root, * new_root;
 
     /* Case: nonempty root.
      * Key and pointer have already been deleted,
      * so nothing to be done.
      */
-	root = page_to_node(root);
+	root = page_to_node(root_num);
     if (root->num_keys > 0)
-        return root->pagenum;
+        return root_num;
 
     /* Case: empty root. 
      */
@@ -765,8 +765,8 @@ node * adjust_root(node * root) {
     // as the new root.
 
     if (!root->is_leaf) {
-        new_root = page_to_node(root->pointers[0]);
-        new_root->parent = NULL;
+        new_root = page_to_node(root->pages[0]);
+        new_root->parent = 0;
     }
 
     // If it is a leaf (has no children),
@@ -791,7 +791,7 @@ node * adjust_root(node * root) {
  * can accept the additional entries
  * without exceeding the maximum.
  */
-node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index, int64_t k_prime) {
+pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor, int neighbor_index, int64_t k_prime) {
 
     int i, j, neighbor_insertion_index, n_end;
     node * tmp;
@@ -847,7 +847,7 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
          */
 
         for (i = 0; i < neighbor->num_keys + 1; i++) {
-            tmp = page_to_node(neighbor->pointers[i]);
+            tmp = page_to_node(neighbor->pages[i]);
             tmp->parent = neighbor->pagenum;
 			node_to_page(tmp);
         }
@@ -885,7 +885,7 @@ node * coalesce_nodes(node * root, node * n, node * neighbor, int neighbor_index
  * small node's entries without exceeding the
  * maximum
  */
-node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_index, 
+pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor, int neighbor_index, 
         int64_t k_prime_index, int64_t k_prime) {  
 
     int i;
@@ -968,7 +968,7 @@ node * redistribute_nodes(node * root, node * n, node * neighbor, int neighbor_i
  * from the leaf, and then makes all appropriate
  * changes to preserve the B+ tree properties.
  */
-node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
+pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer ) {
 
     int min_keys;
     node * neighbor;
@@ -1020,9 +1020,8 @@ node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
     k_prime_index = neighbor_index == -1 ? 0 : neighbor_index;
 	node* parent = page_to_node(n->parent);
     k_prime = parent->keys[k_prime_index];
-    neighbor = neighbor_index == -1 ? parent->pointers[1] : 
-        parent->pointers[neighbor_index];
-	neighbor = page_to_node(neighbor);
+    neighbor = neighbor_index == -1 ? page_to_node(parent->pages[1]) : 
+        page_to_node(parent->pages[neighbor_index]);
 
     capacity = n->is_leaf ? leaf_order : internal_order - 1;
 
@@ -1041,7 +1040,7 @@ node * delete_entry( node * root, node * n, int64_t key, void * pointer ) {
 
 /* Master deletion function.
  */
-node * delete(node * root, int64_t key) {
+pagenum_t delete(pagenum_t root, int64_t key) {
 
     node * key_leaf;
     record * key_record;

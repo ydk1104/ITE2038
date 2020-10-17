@@ -76,7 +76,7 @@ struct node* page_to_node(pagenum_t pagenum){
 	file_read_page(pagenum, page);
 	struct node* node = malloc(sizeof(struct node));
 	page->node = node;
-	node->parent = (struct node*)(page->page.parentPageNum);
+	node->parent = page->page.parentPageNum;
 	node->is_leaf = page->page.isLeaf;
 	node->num_keys = page->page.numOfKeys;
 	node->pagenum = pagenum;
