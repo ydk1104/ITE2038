@@ -107,13 +107,6 @@ union{
  */
 extern int leaf_order, internal_order;
 
-/* The queue is used to print the tree in
- * level order, starting from the root
- * printing each entire rank on a separate
- * line, finishing with the leaves.
- */
-extern node * queue;
-
 /* The user can toggle on and off the "verbose"
  * property, which causes the pointer addresses
  * to be printed out in hexadecimal notation
