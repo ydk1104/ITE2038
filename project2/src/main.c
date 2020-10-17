@@ -23,7 +23,8 @@ int my_main(){
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
-	insert_test(100000);	
+	int N = 1e5;
+	insert_test(N);
 	return 0;
 }
 

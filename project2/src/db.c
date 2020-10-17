@@ -34,7 +34,6 @@ int db_delete (int64_t key){
 	if(root==-1) return 1;
 	file_read_page(0, &header);
 	if(root != header.header.rootPageNum){
-	printf("root : %ld\n", root);
 		header.header.rootPageNum = root;
 		file_write_page(0, &header);
 	}

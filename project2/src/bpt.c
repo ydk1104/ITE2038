@@ -930,7 +930,7 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
         for (i = n->num_keys; i < leaf_order - 1; i++)
             n->pointers[i] = NULL;
     else
-        for (i = n->num_keys + 1; i < leaf_order; i++)
+        for (i = n->num_keys + 1; i < internal_order; i++)
             n->pointers[i] = NULL;
 	node_to_page(n);
     return n;
@@ -967,12 +967,13 @@ node * adjust_root(node * root) {
     else
         new_root = NULL;
 
+	file_free_page(root->pagenum);
     free(root->keys);
     free(root->pointers);
     free(root);
 
 	node_to_page(new_root);
-    return new_root && new_root->pagenum;
+    return new_root ? new_root->pagenum : 0;
 }
 
 
