@@ -2,6 +2,106 @@
 #include<file.h>
 
 int table_id_to_fd[TABLE_SIZE];
+#define PAGE_POOL_SIZE 100
+page_t pages[PAGE_POOL_SIZE];
+int start, temp, end;
+
+pagenum_t get_pageidx_by_node(node* node){
+	pagenum_t pageidx = -1;
+	for(pagenum_t i=0; i!=end; i++){
+		if(pages[i].node == node){
+			return i;
+		}
+	}
+	if(end == PAGE_POOL_SIZE){
+		if(temp==PAGE_POOL_SIZE) temp=0;
+		return temp++;
+	}
+	else return end++;
+
+}
+
+pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
+	pagenum_t pageidx = -1;
+	for(pagenum_t i=0; i!=end; i++){
+		if(pages[i].node && pages[i].node->pagenum == pagenum){
+			return i;
+		}
+	}
+	if(end == PAGE_POOL_SIZE){
+		if(temp==PAGE_POOL_SIZE) temp=0;
+		return temp++;
+	}
+	else return end++;
+}
+
+void node_to_page(node* node){
+	if(node == NULL) return;
+	pagenum_t pageidx = get_pageidx_by_node(node);
+
+	page_t *page = pages+pageidx;
+	memset(page, 0, sizeof(page_t));
+	page->node = node;
+	page->page.parentPageNum = (pagenum_t)node->parent;
+	page->page.isLeaf = node->is_leaf;
+	page->page.numOfKeys = node->num_keys;
+	int leaf_order = DEFAULT_LEAF_ORDER, internal_order = DEFAULT_INTERNAL_ORDER;
+//	leaf_order = internal_order = DEFAULT_ORDER;
+	if(node -> is_leaf){
+		page->page.pageNum = node->pages[leaf_order-1];
+		for(int i=0; i<node->num_keys; i++){
+			page->leaf[i].key = node->keys[i];
+			strncpy(page->leaf[i].value, ((record*)node->pointers[i])->value, 120);
+		}
+	}
+	else{
+		page->page.pageNum = node->pages[0];
+		for(int i=0; i<node->num_keys; i++){
+			page->internal[i].key = node->keys[i];
+			page->internal[i].pageNum = node->pages[i+1];
+		}
+	}
+	file_write_page(node->pagenum, page);
+}
+
+struct node* page_to_node(pagenum_t pagenum){
+	if(pagenum == 0) return NULL;
+		
+	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
+	int leaf_order = DEFAULT_LEAF_ORDER, internal_order = DEFAULT_INTERNAL_ORDER;
+//	leaf_order = internal_order = DEFAULT_ORDER;
+	page_t* page = pages+pageidx;
+	if(page->node && page->node->pagenum == pagenum) return page->node;
+	
+	file_read_page(pagenum, page);
+	struct node* node = malloc(sizeof(struct node));
+	page->node = node;
+	node->parent = (struct node*)(page->page.parentPageNum);
+	node->is_leaf = page->page.isLeaf;
+	node->num_keys = page->page.numOfKeys;
+	node->next = NULL;
+	node->pagenum = pagenum;
+	if(node -> is_leaf){
+		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
+		node->pointers = malloc(leaf_order * sizeof(void*));
+		node->pages[leaf_order-1] = page->page.pageNum;
+		for(int i=0; i<node->num_keys; i++){
+			node->keys[i] = page->leaf[i].key;
+			node->pointers[i] = malloc(sizeof(record));
+			strncpy(((record*)node->pointers[i])->value, page->leaf[i].value, 120);
+		}
+	}
+	else{
+		node->keys = malloc((internal_order - 1) * sizeof(int64_t));
+		node->pages = malloc(internal_order * sizeof(pagenum_t*));
+		node->pages[0] = page->page.pageNum;
+		for(int i=0; i<node->num_keys; i++){
+			node->keys[i] = page->internal[i].key;
+			node->pages[i+1] = page->internal[i].pageNum;
+		}
+	}
+	return node;
+}
 
 int file_open(char* pathname){
 	int fd;

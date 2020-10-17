@@ -4,22 +4,33 @@
 
 // MAIN
 
+void insert_test(int N){
+	char s[11] = "0123456789";
+	for(int i=0; i<N; i++){
+		int error = db_insert(i, s+(i%10));
+//		if(!error) printf("%d\n", i);
+	}
+	for(int i=0; i<N; i++){
+		int error = db_delete(i);
+	}
+}
+
 int my_main(){
 	int tbl_id = open_table("out/out.txt");
-	pagenum_t num = file_alloc_page();
-	printf("num : %d\n", num);
 	page_t head = {0, };
 	file_read_page(0, &head);
 	printf("header page:%lx %lx %lx\n",
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
+	int N = 1e5;
+	insert_test(N);
 	return 0;
 }
 
 int main( int argc, char ** argv ) {
 
-//		return my_main();
+		return my_main();
 
     char * input_file;
     FILE * fp;
@@ -31,15 +42,6 @@ int main( int argc, char ** argv ) {
 
     root = NULL;
     verbose_output = false;
-
-    if (argc > 1) {
-        order = atoi(argv[1]);
-        if (order < MIN_ORDER || order > MAX_ORDER) {
-            fprintf(stderr, "Invalid order: %d .\n\n", order);
-            usage_3();
-            exit(EXIT_FAILURE);
-        }
-    }
 
     license_notice();
     usage_1();  
@@ -53,8 +55,8 @@ int main( int argc, char ** argv ) {
             exit(EXIT_FAILURE);
         }
         while (!feof(fp)) {
-            fscanf(fp, "%d\n", &input);
-            root = insert(root, input, input);
+            fscanf(fp, "%d %s", &input, input_value);
+            root = insert(root, input, input_value);
         }
         fclose(fp);
         print_tree(root);

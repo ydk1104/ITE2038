@@ -3,6 +3,7 @@
 
 // Uncomment the line below if you are compiling on Windows.
 // #define WINDOWS
+#include <file.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -16,6 +17,9 @@
 
 // Default order is 4.
 #define DEFAULT_ORDER 4
+#define DEFAULT_LEAF_ORDER 32
+#define DEFAULT_INTERNAL_ORDER 249
+
 
 // Minimum order is necessarily 3.  We set the maximum
 // order arbitrarily.  You may change the maximum order.
@@ -44,7 +48,6 @@
  * of the value field.
  */
 typedef struct record {
-    int64_t key;
 	char value[120];
 } record;
 
@@ -76,13 +79,19 @@ typedef struct record {
  * to data is always num_keys.  The
  * last leaf pointer points to the next leaf.
  */
+
+typedef uint64_t pagenum_t;
 typedef struct node {
-    void ** pointers;
+union{
+	void ** pointers;
+	pagenum_t *pages;
+};
     uint64_t * keys;
     struct node * parent;
     bool is_leaf;
     int num_keys;
     struct node * next; // Used for queue.
+	pagenum_t pagenum; // Used for disk-io.
 } node;
 
 // GLOBALS.
@@ -97,7 +106,7 @@ typedef struct node {
  * This global variable is initialized to the
  * default value.
  */
-extern int order;
+extern int leaf_order, internal_order;
 
 /* The queue is used to print the tree in
  * level order, starting from the root
@@ -154,17 +163,17 @@ node * insert_into_node_after_splitting(node * root, node * parent,
 node * insert_into_parent(node * root, node * left, int64_t key, node * right);
 node * insert_into_new_root(node * left, int64_t key, node * right);
 node * start_new_tree(int64_t key, record * pointer);
-node * insert( node * root, int64_t key, const char* value );
+pagenum_t insert( node * root, int64_t key, const char* value );
 
 // Deletion.
 
 int get_neighbor_index( node * n );
 node * adjust_root(node * root);
 node * coalesce_nodes(node * root, node * n, node * neighbor,
-                      int neighbor_index, int k_prime);
+                      int neighbor_index, int64_t k_prime);
 node * redistribute_nodes(node * root, node * n, node * neighbor,
                           int neighbor_index,
-        int k_prime_index, int k_prime);
+        int64_t k_prime_index, int64_t k_prime);
 node * delete_entry( node * root, node * n, int64_t key, void * pointer );
 node * delete( node * root, int64_t key );
 
