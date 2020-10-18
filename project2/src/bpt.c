@@ -734,10 +734,14 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     // First determine number of pointers.
     num_pointers = n->is_leaf ? n->num_keys : n->num_keys + 1;
     i = 0;
-	if(n->is_leaf) while(n->pointers[i] != pointer)
+	if(n->is_leaf) while(n->pointers[i] != pointer){
 		i++;
-	else while (n->pages[i] != pointer->pagenum)
+		if(i == num_pointers) break;
+	}
+	else while (n->pages[i] != pointer->pagenum){
         i++;
+		if(i == num_pointers) break;
+	}
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
 

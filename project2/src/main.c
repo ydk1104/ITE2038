@@ -4,6 +4,11 @@
 
 // MAIN
 
+//#define PRINT
+#ifndef PRINT 
+	#define printf(x, ...) (void*)(x)
+#endif
+
 void insert_test(int N){
 	char s[11] = "0123456789";
 	char val[120];
@@ -16,7 +21,7 @@ void insert_test(int N){
 		int error = db_find(i, val);
 		printf("find test : %d %s\n", i, val);
 		if(error) printf("FAILED");
-	}
+	} // */
 	for(int i=0; i<N; i++){
 		int error = db_delete(i);
 		printf("delete test : %d\n", i);
@@ -26,7 +31,7 @@ void insert_test(int N){
 		int error = db_find(i, val);
 		printf("not find test : %d", i);
 		if(!error) printf("FAILED");
-	}
+	} // */
 }
 
 int my_main(){
