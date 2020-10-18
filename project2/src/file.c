@@ -21,7 +21,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 }
 
 void node_to_page(struct node** nodeptr, bool doFree){
-	if(*nodeptr == NULL);
+	if(*nodeptr == NULL) return;
 	struct node* node = *nodeptr;
 	pagenum_t pageidx = get_pageidx_by_pagenum(node->pagenum);
 	page_t *page = pages+pageidx;
@@ -60,7 +60,6 @@ void node_to_page(struct node** nodeptr, bool doFree){
 }
 
 void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
-	if(pagenum == 0) return;
 	int leaf_order = DEFAULT_LEAF_ORDER,
 		internal_order = DEFAULT_INTERNAL_ORDER;
 	
@@ -74,8 +73,12 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 		free(node->keys);
 		free(node->pages);
 		free(*nodeptr);
+		*nodeptr = NULL;
 	}
-	*nodeptr = node = malloc(sizeof(node));
+	if(pagenum == 0){
+		return;
+	}
+	*nodeptr = node = malloc(sizeof(struct node));
 
 	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
 	page_t* page = pages+pageidx;

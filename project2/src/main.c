@@ -12,6 +12,7 @@ void insert_test(int N){
 	}
 	for(int i=0; i<N; i++){
 		int error = db_delete(i);
+//		printf("%d %d\n", error, i);
 	}
 }
 
