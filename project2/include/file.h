@@ -17,34 +17,34 @@ typedef struct{
 		struct{
 			union{
 				struct{
-					uint64_t freePageNum;
-					uint64_t rootPageNum;
-					uint64_t numOfPages;
+					pagenum_t freePageNum;
+					pagenum_t rootPageNum;
+					pagenum_t numOfPages;
 				}header;
 				struct{
-					uint64_t nextFreePage;
+					pagenum_t nextFreePage;
 				}free;
 				struct{
 					struct{
-						uint64_t parentPageNum;
+						pagenum_t parentPageNum;
 						uint32_t isLeaf;
 						uint32_t numOfKeys;
 						char reserved[104];
-						uint64_t pageNum;
+						pagenum_t pageNum;
 					}page;
 					union{
 						struct{
-							uint64_t key;
-							uint64_t pageNum;
+							int64_t key;
+							pagenum_t pageNum;
 						}internal[248];
 						struct{
-							uint64_t key;
+							int64_t key;
 							char value[120];
 						}leaf[31];
 					};
 				};
 			};
-		pagenum_t pagenum;
+			pagenum_t pagenum;
 		};
 	};
 }page_t;
