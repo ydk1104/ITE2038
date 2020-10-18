@@ -121,7 +121,6 @@ int file_open(char* pathname){
 			puts("file create error");
 			return -1;
 		}
-		puts("New file");
 		page_t src = {0, };
 		src.header.numOfPages = 1;
 		table_id_to_fd[table_id] = fd;
