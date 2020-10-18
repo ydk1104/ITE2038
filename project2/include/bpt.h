@@ -86,7 +86,7 @@ union{
 	void ** pointers;
 	pagenum_t *pages;
 };
-    uint64_t * keys;
+    int64_t * keys;
     pagenum_t parent;
     bool is_leaf;
     int num_keys;
