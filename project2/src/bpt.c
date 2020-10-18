@@ -371,13 +371,14 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
 pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, record * pointer) {
 
     node * new_leaf;
-    int * temp_keys;
+    int64_t * temp_keys;
     void ** temp_pointers;
-    int insertion_index, split, new_key, i, j;
+    int insertion_index, split, i, j;
+	int64_t new_key;
 
     new_leaf = make_leaf();
 
-    temp_keys = malloc( leaf_order * sizeof(int) );
+    temp_keys = malloc( leaf_order * sizeof(int64_t) );
     if (temp_keys == NULL) {
         perror("Temporary keys array.");
         exit(EXIT_FAILURE);
@@ -466,9 +467,10 @@ pagenum_t insert_into_node(pagenum_t root, node * n,
 pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int left_index, 
         int64_t key, pagenum_t right_pagenum) {
 
-    int i, j, split, k_prime;
+    int i, j, split;
+	int64_t k_prime;
     node * new_node, * child = NULL;
-    int * temp_keys;
+    int64_t * temp_keys;
     pagenum_t * temp_pointers;
 
     /* First create a temporary set of keys and pointers
@@ -485,7 +487,7 @@ pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int 
         perror("Temporary pointers array for splitting nodes.");
         exit(EXIT_FAILURE);
     }
-    temp_keys = malloc( internal_order * sizeof(int) );
+    temp_keys = malloc( internal_order * sizeof(int64_t) );
     if (temp_keys == NULL) {
         perror("Temporary keys array for splitting nodes.");
         exit(EXIT_FAILURE);

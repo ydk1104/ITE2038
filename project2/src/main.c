@@ -4,39 +4,46 @@
 
 // MAIN
 
-//#define PRINT
+#define PRINT
 #ifndef PRINT 
 	#define printf(x, ...) (void*)(x)
 #endif
 
 void insert_test(int N){
+	N /= 10;
 	char s[11] = "0123456789";
 	char val[120];
+	int64_t offset = -5e9;
 	for(int i=0; i<N; i++){
-		int error = db_insert(i, s+(i%10));
-		printf("insert test : %d\n", i);
+		int64_t key = offset+i;
+		int error = db_insert(key, s+(i%10));
+		printf("insert test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
-	}
+	}// */
 	for(int i=0; i<N; i++){
-		int error = db_find(i, val);
-		printf("find test : %d %s\n", i, val);
+		int64_t key = offset+i;
+		int error = db_find(key, val);
+		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
 	for(int i=0; i<N; i++){
-		int error = db_delete(i);
-		printf("delete test : %d\n", i);
+		int64_t key = offset+i;
+		int error = db_delete(key);
+		printf("delete test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
-		int error = db_find(i, val);
-		printf("not find test : %d", i), exit(-1);
-		if(!error) printf("FAILED");
+		int64_t key = offset+i;
+		int error = db_find(key, val);
+		printf("not find test : %ld\n", key);
+		if(!error) printf("FAILED"), exit(-1);
 	} // */
 }
 
 int my_main(){
 //	int tbl_id = open_table("out/out.txt");
 	int tlb_id = open_table("/mnt/ramdisk/out.txt");
+//	int tbl_id = open_table("/mnt/ramdisk/t.db");
 	page_t head = {0, };
 	file_read_page(0, &head);
 	printf("header page:%lx %lx %lx\n",
