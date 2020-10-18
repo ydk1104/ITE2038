@@ -6,25 +6,10 @@ int table_id_to_fd[TABLE_SIZE];
 page_t pages[PAGE_POOL_SIZE];
 int start, temp, end;
 
-pagenum_t get_pageidx_by_node(node* node){
-	pagenum_t pageidx = -1;
-	for(pagenum_t i=0; i!=end; i++){
-		if(pages[i].node == node){
-			return i;
-		}
-	}
-	if(end == PAGE_POOL_SIZE){
-		if(temp==PAGE_POOL_SIZE) temp=0;
-		return temp++;
-	}
-	else return end++;
-
-}
-
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 	pagenum_t pageidx = -1;
 	for(pagenum_t i=0; i!=end; i++){
-		if(pages[i].node && pages[i].node->pagenum == pagenum){
+		if(pages[i].pagenum == pagenum){
 			return i;
 		}
 	}
@@ -35,18 +20,18 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 	else return end++;
 }
 
-void node_to_page(node* node){
+void node_to_page(struct node** nodeptr, bool doFree){
 	if(node == NULL) return;
-	pagenum_t pageidx = get_pageidx_by_node(node);
+	pagenum_t pageidx = get_pageidx_by_pagenum(node->pagenum);
 
+	struct node* node = *nodeptr;
 	page_t *page = pages+pageidx;
 	memset(page, 0, sizeof(page_t));
-	page->node = node;
+	page->pagenum = node->pagenum;
 	page->page.parentPageNum = (pagenum_t)node->parent;
 	page->page.isLeaf = node->is_leaf;
 	page->page.numOfKeys = node->num_keys;
 	int leaf_order = DEFAULT_LEAF_ORDER, internal_order = DEFAULT_INTERNAL_ORDER;
-//	leaf_order = internal_order = DEFAULT_ORDER;
 	if(node -> is_leaf){
 		page->page.pageNum = node->pages[leaf_order-1];
 		for(int i=0; i<node->num_keys; i++){
@@ -62,24 +47,46 @@ void node_to_page(node* node){
 		}
 	}
 	file_write_page(node->pagenum, page);
+	if(doFree){
+		free(node->keys);
+		if(node->is_leaf){
+			for(int i=0; i<node->num_leys; i++){
+				free(node->pointers[i]);
+			}	
+		}
+		free(node->pages);
+		free(*nodeptr);
+		*nodeptr = NULL;
+	}
 }
 
-struct node* page_to_node(pagenum_t pagenum){
+void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 	if(pagenum == 0) return NULL;
-		
-	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
-	int leaf_order = DEFAULT_LEAF_ORDER, internal_order = DEFAULT_INTERNAL_ORDER;
-//	leaf_order = internal_order = DEFAULT_ORDER;
-	page_t* page = pages+pageidx;
-	if(page->node && page->node->pagenum == pagenum) return page->node;
+	int leaf_order = DEFAULT_LEAF_ORDER,
+		internal_order = DEFAULT_INTERNAL_ORDER;
 	
+	struct node * node = *nodeptr;
+	if(node != NULL){
+		if(node->is_leaf){
+			for(int i=0; i<node->num_leys; i++){
+				free(node->pointers[i]);
+			}
+		}
+		free(node->keys);
+		free(node->pages);
+		free(*nodeptr);
+	}
+	*nodeptr = node = malloc(sizeof(node));
+
+	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
+	page_t* page = pages+pageidx;
+//	if(node->pagenum == pagenum) return; // correct?
+
 	file_read_page(pagenum, page);
-	struct node* node = malloc(sizeof(struct node));
-	page->node = node;
 	node->parent = page->page.parentPageNum;
 	node->is_leaf = page->page.isLeaf;
 	node->num_keys = page->page.numOfKeys;
-	node->pagenum = pagenum;
+	node->pagenum = page->pagenum = pagenum;
 	if(node -> is_leaf){
 		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
 		node->pointers = malloc(leaf_order * sizeof(void*));
@@ -99,7 +106,7 @@ struct node* page_to_node(pagenum_t pagenum){
 			node->pages[i+1] = page->internal[i].pageNum;
 		}
 	}
-	return node;
+	return;
 }
 
 int file_open(char* pathname){

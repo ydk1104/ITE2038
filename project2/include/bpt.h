@@ -140,10 +140,10 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer );
 pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key,
                                         record * pointer);
 pagenum_t insert_into_node(pagenum_t root, node * parent, 
-        int left_index, int64_t key, node * right);
+        int left_index, int64_t key, pagenum_t right_pagenum);
 pagenum_t insert_into_node_after_splitting(pagenum_t root, node * parent,
                                         int left_index,
-        int64_t key, node * right);
+        int64_t key, pagenum_t right_pagenum);
 pagenum_t insert_into_parent(pagenum_t root, node * left, int64_t key, node * right);
 pagenum_t insert_into_new_root(node * left, int64_t key, node * right);
 pagenum_t start_new_tree(int64_t key, record * pointer);

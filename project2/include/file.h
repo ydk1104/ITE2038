@@ -7,6 +7,7 @@
 #include<stdint.h>
 #include<sys/types.h>
 #include<sys/stat.h>
+#include<stdbool.h>
 #include<unistd.h>
 typedef uint64_t pagenum_t;
 typedef struct{
@@ -43,7 +44,7 @@ typedef struct{
 					};
 				};
 			};
-		struct node* node;
+		pagenum_t pagenum;
 		};
 	};
 }page_t;
@@ -51,8 +52,10 @@ typedef struct{
 #define PAGE_SIZE 4096
 #define TABLE_SIZE 1
 
-void node_to_page(struct node* node);
-struct node* page_to_node(pagenum_t pagenum);
+typedef struct node node;
+
+void node_to_page(node** nodeptr, bool do_free);
+void page_to_node(pagenum_t pagenum, node** nodeptr);
 int file_open(char*);
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
