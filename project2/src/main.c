@@ -17,7 +17,8 @@ void insert_test(int N){
 }
 
 int my_main(){
-	int tbl_id = open_table("out/out.txt");
+//	int tbl_id = open_table("out/out.txt");
+	int tlb_id = open_table("/mnt/ramdisk/out.txt");
 	page_t head = {0, };
 	file_read_page(0, &head);
 	printf("header page:%lx %lx %lx\n",

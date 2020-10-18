@@ -1084,7 +1084,7 @@ pagenum_t delete(pagenum_t root, int64_t key) {
     key_leaf = find_leaf(root, key, false);
     if (key_record != NULL && key_leaf != NULL) {
         root = delete_entry(root, key_leaf, key, key_record);
-        free(key_record);
+//        free(key_record);
     }
     return root;
 }
