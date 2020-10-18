@@ -152,7 +152,7 @@ pagenum_t insert( pagenum_t root, int64_t key, const char* value );
 // Deletion.
 
 int get_neighbor_index( node * n );
-pagenum_t adjust_root(pagenum_t root);
+pagenum_t adjust_root(node * root);
 pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor,
                       int neighbor_index, int64_t k_prime);
 pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor,
