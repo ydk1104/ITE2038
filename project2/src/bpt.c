@@ -727,7 +727,6 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     i = 0;
     while (n->keys[i] != key)
         i++;
-	printf("key at %d", i);
     for (++i; i < n->num_keys; i++)
         n->keys[i - 1] = n->keys[i];
 
@@ -743,7 +742,6 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
         i++;
 		if(i == num_pointers) break;
 	}
-	printf("pointer at %d when %s\n", i+!n->is_leaf, n->is_leaf ? "leaf" : "ineternal");
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
 
