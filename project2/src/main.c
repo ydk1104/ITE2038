@@ -15,21 +15,21 @@ void insert_test(int N){
 	for(int i=0; i<N; i++){
 		int error = db_insert(i, s+(i%10));
 		printf("insert test : %d\n", i);
-		if(error) printf("FAILED");
+		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
 		int error = db_find(i, val);
 		printf("find test : %d %s\n", i, val);
-		if(error) printf("FAILED");
+		if(error) printf("FAILED"), exit(-1);
 	} // */
 	for(int i=0; i<N; i++){
 		int error = db_delete(i);
 		printf("delete test : %d\n", i);
-		if(error) printf("FAILED");
+		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
 		int error = db_find(i, val);
-		printf("not find test : %d", i);
+		printf("not find test : %d", i), exit(-1);
 		if(!error) printf("FAILED");
 	} // */
 }
@@ -43,7 +43,7 @@ int my_main(){
 					head.header.freePageNum,
 					head.header.rootPageNum,
 					head.header.numOfPages);
-	int N = 1e5;
+	int N = 1e6;
 	insert_test(N);
 	return 0;
 }

@@ -734,14 +734,10 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     // First determine number of pointers.
     num_pointers = n->is_leaf ? n->num_keys : n->num_keys + 1;
     i = 0;
-	if(n->is_leaf) while(n->pointers[i] != pointer){
+	if(n->is_leaf) while(n->pointers[i] != pointer)
 		i++;
-		if(i == num_pointers) break;
-	}
-	else while (n->pages[i] != pointer->pagenum){
+	else while (n->pages[i] != pointer->pagenum)
         i++;
-		if(i == num_pointers) break;
-	}
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
 
@@ -1047,6 +1043,7 @@ pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer ) 
 		page_to_node(parent->pages[1], &neighbor) : 
         page_to_node(parent->pages[neighbor_index], &neighbor);
 
+	free_node(&parent);
     capacity = n->is_leaf ? leaf_order : internal_order - 1;
 
     /* Coalescence. */
@@ -1067,13 +1064,15 @@ pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer ) 
 pagenum_t delete(pagenum_t root, int64_t key) {
 
     node * key_leaf;
-    int key_record;
+    int key_record_idx;
 
-    key_record = find(root, key, NULL);
+    key_record_idx = find(root, key, NULL);
     key_leaf = find_leaf(root, key);
-    if (key_record != -1 && key_leaf != NULL) {
-        root = delete_entry(root, key_leaf, key, key_leaf->pointers[key_record]);
-//        free(key_record);
+    if (key_record_idx != -1 && key_leaf != NULL) {
+		record * key_record = key_leaf->pointers[key_record_idx];
+        root = delete_entry(root, key_leaf, key, key_record); 
+		free(key_record);
     }
     return root;
 }
+
