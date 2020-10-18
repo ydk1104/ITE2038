@@ -236,21 +236,21 @@ node * find_leaf( pagenum_t root, int64_t key) {
 /* Finds and returns the record to which
  * a key refers.
  */
-record * find( pagenum_t root, int64_t key, char* ret_val) {
+int find( pagenum_t root, int64_t key, char* ret_val) {
     int i = 0;
     node * c = find_leaf( root, key );
-    if (c == NULL) return NULL;
+    if (c == NULL) return -1;
     for (i = 0; i < c->num_keys; i++)
         if (c->keys[i] == key) break;
     if (i == c->num_keys){
  		free_node(&c);
-		return NULL;
+		return -1;
 	}
     else{
 		record* ret = (record *)c->pointers[i];
 		if(ret_val) strncpy(ret_val, ret->value, 120);
 		free_node(&c);
-        return ret;
+        return i;
 	}
 }
 
@@ -643,7 +643,7 @@ pagenum_t insert( pagenum_t root, int64_t key, const char* value ) {
      * duplicates.
      */
 
-    if (root && find(root, key, NULL) != NULL)
+    if (root && find(root, key, NULL) != -1)
         return -1;
 
     /* Create a new record for the
@@ -727,6 +727,7 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     i = 0;
     while (n->keys[i] != key)
         i++;
+	printf("key at %d", i);
     for (++i; i < n->num_keys; i++)
         n->keys[i - 1] = n->keys[i];
 
@@ -742,6 +743,7 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
         i++;
 		if(i == num_pointers) break;
 	}
+	printf("pointer at %d when %s\n", i+!n->is_leaf, n->is_leaf ? "leaf" : "ineternal");
     for (++i; i < num_pointers; i++)
         n->pointers[i - 1] = n->pointers[i];
 
@@ -1067,12 +1069,12 @@ pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer ) 
 pagenum_t delete(pagenum_t root, int64_t key) {
 
     node * key_leaf;
-    record * key_record;
+    int key_record;
 
     key_record = find(root, key, NULL);
     key_leaf = find_leaf(root, key);
-    if (key_record != NULL && key_leaf != NULL) {
-        root = delete_entry(root, key_leaf, key, key_record);
+    if (key_record != -1 && key_leaf != NULL) {
+        root = delete_entry(root, key_leaf, key, key_leaf->pointers[key_record]);
 //        free(key_record);
     }
     return root;

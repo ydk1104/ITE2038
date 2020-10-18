@@ -127,7 +127,7 @@ void usage_3( void );
 int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
         int64_t returned_keys[], void * returned_pointers[]); 
 node * find_leaf( pagenum_t root, int64_t key);
-record * find( pagenum_t root, int64_t key, char* ret_val);
+int find( pagenum_t root, int64_t key, char* ret_val);
 int cut( int length );
 
 // Insertion.

@@ -22,8 +22,8 @@ int db_insert (int64_t key, char * value){
 int db_find (int64_t key, char * ret_val){
 	page_t header;
 	file_read_page(0, &header);
-	record* ptr = find(header.header.rootPageNum, key, ret_val);
-	if(!ptr) return 1;
+	int idx = find(header.header.rootPageNum, key, ret_val);
+	if(idx == -1) return 1;
 	return 0;
 }
 int db_delete (int64_t key){
