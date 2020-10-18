@@ -6,13 +6,26 @@
 
 void insert_test(int N){
 	char s[11] = "0123456789";
+	char val[120];
 	for(int i=0; i<N; i++){
 		int error = db_insert(i, s+(i%10));
-//		if(!error) printf("%d\n", i);
+		printf("insert test : %d\n", i);
+		if(error) printf("FAILED");
+	}
+	for(int i=0; i<N; i++){
+		int error = db_find(i, val);
+		printf("find test : %d %s\n", i, val);
+		if(error) printf("FAILED");
 	}
 	for(int i=0; i<N; i++){
 		int error = db_delete(i);
-//		printf("%d %d\n", error, i);
+		printf("delete test : %d\n", i);
+		if(error) printf("FAILED");
+	}
+	for(int i=0; i<N; i++){
+		int error = db_find(i, val);
+		printf("not find test : %d", i);
+		if(!error) printf("FAILED");
 	}
 }
 

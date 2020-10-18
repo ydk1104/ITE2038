@@ -180,7 +180,7 @@ int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose
         int64_t returned_keys[], void * returned_pointers[]) {
     int i, num_found;
     num_found = 0;
-    node * n = find_leaf( root, key_start, verbose );
+    node * n = find_leaf( root, key_start );
     if (n == NULL) return 0;
     for (i = 0; i < n->num_keys && n->keys[i] < key_start; i++) ;
     if (i == n->num_keys) return 0;
@@ -214,36 +214,20 @@ void free_node(node** node_ptr){
  * if the verbose flag is set.
  * Returns the leaf containing the given key.
  */
-node * find_leaf( pagenum_t root, int64_t key, bool verbose ) {
+node * find_leaf( pagenum_t root, int64_t key) {
     int i = 0;
     node * c = NULL;
 	page_to_node(root, &c);
     if (c == NULL) {
-        if (verbose) 
-            printf("Empty tree.\n");
         return c;
     }
     while (c && !c->is_leaf) {
-        if (verbose) {
-            printf("[");
-            for (i = 0; i < c->num_keys - 1; i++)
-                printf("%ld ", c->keys[i]);
-            printf("%ld] ", c->keys[i]);
-        }
         i = 0;
         while (i < c->num_keys) {
             if (key >= c->keys[i]) i++;
             else break;
         }
-        if (verbose)
-            printf("%d ->\n", i);
         page_to_node(c->pages[i], &c);
-    }
-    if (verbose) {
-        printf("Leaf [");
-        for (i = 0; i < c->num_keys - 1; i++)
-            printf("%ld ", c->keys[i]);
-        printf("%ld] ->\n", c->keys[i]);
     }
     return c;
 }
@@ -252,9 +236,9 @@ node * find_leaf( pagenum_t root, int64_t key, bool verbose ) {
 /* Finds and returns the record to which
  * a key refers.
  */
-record * find( pagenum_t root, int64_t key, bool verbose ) {
+record * find( pagenum_t root, int64_t key, char* ret_val) {
     int i = 0;
-    node * c = find_leaf( root, key, verbose );
+    node * c = find_leaf( root, key );
     if (c == NULL) return NULL;
     for (i = 0; i < c->num_keys; i++)
         if (c->keys[i] == key) break;
@@ -264,6 +248,7 @@ record * find( pagenum_t root, int64_t key, bool verbose ) {
 	}
     else{
 		record* ret = (record *)c->pointers[i];
+		if(ret_val) strncpy(ret_val, ret->value, 120);
 		free_node(&c);
         return ret;
 	}
@@ -658,7 +643,7 @@ pagenum_t insert( pagenum_t root, int64_t key, const char* value ) {
      * duplicates.
      */
 
-    if (root && find(root, key, false) != NULL)
+    if (root && find(root, key, NULL) != NULL)
         return -1;
 
     /* Create a new record for the
@@ -679,7 +664,7 @@ pagenum_t insert( pagenum_t root, int64_t key, const char* value ) {
      * (Rest of function body.)
      */
 
-    leaf = find_leaf(root, key, false);
+    leaf = find_leaf(root, key);
 
     /* Case: leaf has room for key and pointer.
      */
@@ -1080,8 +1065,8 @@ pagenum_t delete(pagenum_t root, int64_t key) {
     node * key_leaf;
     record * key_record;
 
-    key_record = find(root, key, false);
-    key_leaf = find_leaf(root, key, false);
+    key_record = find(root, key, NULL);
+    key_leaf = find_leaf(root, key);
     if (key_record != NULL && key_leaf != NULL) {
         root = delete_entry(root, key_leaf, key, key_record);
 //        free(key_record);
