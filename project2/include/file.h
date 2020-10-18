@@ -54,6 +54,7 @@ typedef struct{
 
 typedef struct node node;
 
+pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum);
 void node_to_page(node** nodeptr, bool do_free);
 void page_to_node(pagenum_t pagenum, node** nodeptr);
 int file_open(char*);
