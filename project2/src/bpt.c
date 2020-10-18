@@ -1074,7 +1074,8 @@ pagenum_t delete(pagenum_t root, int64_t key) {
 		record * key_record = key_leaf->pointers[key_record_idx];
         root = delete_entry(root, key_leaf, key, key_record); 
 		free(key_record);
+    	return root;
     }
-    return root;
+	return -1;
 }
 
