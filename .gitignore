@@ -1,5 +1,6 @@
 tags
 out
-*.o *.txt
+*.o
+*.txt
 main
 .*
