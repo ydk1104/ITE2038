@@ -42,6 +42,11 @@ void insert_test(int N){
 
 int my_main(){
 	int tbl_id = open_table("out/out.txt");
+	printf("tbl_id : %d\n", tbl_id);
+	tbl_id = open_table("out/out.txt");
+	printf("tbl_id : %d\n", tbl_id);
+	tbl_id = open_table("out/out1.txt");
+	printf("tbl_id : %d\n", tbl_id);
 //	int tlb_id = open_table("/mnt/ramdisk/out.txt");
 //	int tbl_id = open_table("/mnt/ramdisk/t.db");
 	page_t head = {0, };
