@@ -16,25 +16,25 @@ void insert_test(int N){
 	int64_t offset = -5e9;
 /*	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_insert(key, s+(i%10));
+		int error = db_insert(0, key, s+(i%10));
 		printf("insert test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}// */
 /*	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(key, val);
+		int error = db_find(0, key, val);
 		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_delete(key);
+		int error = db_delete(0, key);
 		printf("delete test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(key, val);
+		int error = db_find(0, key, val);
 		printf("not find test : %ld\n", key);
 		if(!error) printf("FAILED"), exit(-1);
 	} // */

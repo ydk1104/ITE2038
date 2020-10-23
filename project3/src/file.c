@@ -2,9 +2,21 @@
 #include<file.h>
 
 int table_id_to_fd[TABLE_SIZE];
-#define PAGE_POOL_SIZE 100
-page_t pages[PAGE_POOL_SIZE];
+page_t* pages;
+int buf_size;
 int start, temp, end;
+
+int init_buffer(int buf_num){
+	pages = malloc(sizeof(page_t) * buf_num);
+	if(pages == NULL) return 1;
+	buf_size = buf_num;
+	return 0;
+}
+
+int shutdown_buffer(void){
+	free(pages);
+	return 0;
+}
 
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 	pagenum_t pageidx = -1;
@@ -13,8 +25,8 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 			return i;
 		}
 	}
-	if(end == PAGE_POOL_SIZE){
-		if(temp==PAGE_POOL_SIZE) temp=0;
+	if(end == buf_size){
+		if(temp == buf_size) temp=0;
 		return temp++;
 	}
 	else return end++;

@@ -50,13 +50,16 @@ typedef struct{
 }page_t;
 
 #define PAGE_SIZE 4096
-#define TABLE_SIZE 1
+#define TABLE_SIZE 10
 
 typedef struct node node;
 
+int init_buffer(int buf_num);
+int shutdown_buffer(void);
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum);
 void node_to_page(node** nodeptr, bool do_free);
 void page_to_node(pagenum_t pagenum, node** nodeptr);
+
 int file_open(char*);
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
