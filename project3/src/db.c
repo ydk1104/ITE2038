@@ -31,7 +31,7 @@ int db_insert (int table_id, int64_t key, char * value){
 	--table_id;
 //	page_t header;
 //	file_read_page(0, &header);
-	page_t* header = get_header_ptr();
+	page_t* header = get_header_ptr(true);
 	pagenum_t root = insert(header->header.rootPageNum, key, value);
 	if(root==-1) return 1;
 //	file_read_page(0, &header);
@@ -46,7 +46,7 @@ int db_insert (int table_id, int64_t key, char * value){
 //so we use table_id-1
 int db_find (int table_id, int64_t key, char * ret_val){
 	--table_id;
-	page_t* header = get_header_ptr();
+	page_t* header = get_header_ptr(true);
 	int idx = find(header->header.rootPageNum, key, ret_val);
 	--header->pin_count;
 	if(idx == -1) return 1;
@@ -56,7 +56,7 @@ int db_find (int table_id, int64_t key, char * ret_val){
 //so we use table_id-1
 int db_delete (int table_id, int64_t key){
 	--table_id;
-	page_t* header = get_header_ptr();
+	page_t* header = get_header_ptr(true);
 	pagenum_t root = delete(header->header.rootPageNum, key);
 	if(root==-1) return 1;
 	if(root != header->header.rootPageNum){

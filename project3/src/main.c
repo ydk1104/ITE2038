@@ -97,12 +97,14 @@ void test(TEST test){
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
 		tbl_id = open_table("out/out.txt");
-	page_t* head = get_header_ptr();
+#ifdef PRINT
+	page_t* head = get_header_ptr(true);
 	head->pin_count--;
 	printf("header page:%lx %lx %lx\n",
 					head->header.freePageNum,
 					head->header.rootPageNum,
 					head->header.numOfPages);
+#endif
 	int N = 1e6;
 	insert_test(N);
 }

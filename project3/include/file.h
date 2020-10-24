@@ -58,7 +58,7 @@ typedef struct page_t{
 
 typedef struct node node;
 
-page_t* get_header_ptr(void);
+page_t* get_header_ptr(bool is_read);
 int init_buffer(int buf_num);
 int shutdown_buffer(void);
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read);

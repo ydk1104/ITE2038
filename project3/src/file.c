@@ -30,8 +30,8 @@ int shutdown_buffer(void){
 	return 0;
 }
 
-page_t* get_header_ptr(void){
-	pagenum_t pageidx = get_pageidx_by_pagenum(0, true);
+page_t* get_header_ptr(bool is_read){
+	pagenum_t pageidx = get_pageidx_by_pagenum(0, is_read);
 	page_t *page = pages+pageidx;
 	if(page->pin_count > 0) return page;
 	++page->pin_count;
@@ -58,6 +58,8 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 				return i;
 			}
 		}
+		printf("cannot search\n");
+		return -1e9;
 	}
 	else{
 		pages[end].pagenum = pagenum;
@@ -179,10 +181,10 @@ int file_open(char* pathname){
 			puts("file create error");
 			return -1;
 		}
-		page_t src = {0, };
-		src.header.numOfPages = 1;
+		page_t *head = get_header_ptr(false);
+		head->header.numOfPages = 1;
+		--head->pin_count;
 		table_id_to_fd[table_id] = fd;
-		//file_write_page(0, &src);
 	}
 	else table_id_to_fd[table_id] = fd;
 	return table_id++;
@@ -190,7 +192,7 @@ int file_open(char* pathname){
 // Allocate an on-disk page from the free page list
 page_t* file_alloc_page(){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
-	page_t* head = get_header_ptr();
+	page_t* head = get_header_ptr(true);
 	page_t* page;
 //	--head->pin_count; - header is already pinned.
 	int freePageNum = head->header.freePageNum;
@@ -200,9 +202,7 @@ page_t* file_alloc_page(){
 		head->header.freePageNum = page->free.nextFreePage;
 	}
 	else{
-		page_t free_page = {0, };
-		page = pages+get_pageidx_by_pagenum(freePageNum, false);
-		*page = free_page;
+		page = pages+get_pageidx_by_pagenum(freePageNum = head->header.numOfPages++, false);
 	}
 	++page->pin_count;
 	return page;
@@ -210,7 +210,7 @@ page_t* file_alloc_page(){
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
-	page_t clean = {0, }, *head = get_header_ptr();
+	page_t clean = {0, }, *head = get_header_ptr(true);
 //	--head->pin_count; - header is already pinned.
 
 	clean.free.nextFreePage = head->header.freePageNum;
