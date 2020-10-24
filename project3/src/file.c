@@ -22,6 +22,7 @@ int init_buffer(int buf_num){
 	for(int i=0; i<buf_num; i++){
 		pages[i].previdx = i-1;
 		pages[i].nextidx = i+1;
+		pages[i].pagenum = -1;
 	}
 	pages[0].previdx = buf_num-1;
 	pages[buf_num-1].nextidx = 0;
@@ -78,12 +79,13 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 	print_buffer();
 
 	pagenum_t pageidx = -1;
-//	for(pagenum_t i=head_idx; i!=tail_idx; i=pages[i].nextidx){
-	for(int i=0; i!=end; i++){
+	if(pages[head_idx].pagenum == pagenum) return head_idx;
+	for(pagenum_t i=pages[head_idx].nextidx; i!=head_idx; i=pages[i].nextidx){
 		if(pages[i].pagenum == pagenum){
 			return i;
 		}
 	}
+
 	if(end == buf_size){
 		for(pagenum_t i=0; i!=end; i++){
 			if(pages[i].pin_count == 0){
