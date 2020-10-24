@@ -93,7 +93,7 @@ void test(TEST test){
 		return;
 	}
 	int tbl_id;
-	open_table("out/out.txt");
+//	open_table("out/out.txt");
 	if(test == TEST_RAM_INSERT)
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else

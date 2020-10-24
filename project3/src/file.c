@@ -6,6 +6,15 @@ page_t* pages;
 int buf_size;
 int start, temp, end, head_idx, tail_idx;
 
+void print_buffer(){
+	int prev = tail_idx;
+	for(int i=head_idx; i!=tail_idx; i=pages[i].nextidx){
+		if(pages[i].previdx != prev)
+		printf("%d : %d %d\n", i, pages[i].previdx, pages[i].nextidx);
+		prev=i;
+	}
+}
+
 int init_buffer(int buf_num){
 	pages = calloc(buf_num, sizeof(page_t));
 	if(pages == NULL) return 1;
@@ -34,6 +43,8 @@ void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 	page->previdx = pages[head_idx].previdx;
 	pages[head_idx].previdx = page-pages;
 	pages[page->previdx].nextidx = page-pages;
+	head_idx = page-pages;
+	tail_idx = page->previdx;
 	if(is_read){
 		pages->pin_count++;
 		file_read_page(pagenum, page);
@@ -47,8 +58,10 @@ void remove_buffer_element(page_t* page){
 		file_write_page(page->pagenum, page);
 	}
 	memset(page, 0, sizeof(page_t));
-	pages[page->previdx].nextidx = nextidx;
-	pages[page->nextidx].previdx = previdx;
+	pages[previdx].nextidx = nextidx;
+	pages[nextidx].previdx = previdx;
+	if(head_idx == page-pages) head_idx = nextidx;
+	if(tail_idx == page-pages) tail_idx = previdx;
 	return;
 }
 
@@ -61,8 +74,11 @@ page_t* get_header_ptr(bool is_read){
 }
 
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
+
+	print_buffer();
+
 	pagenum_t pageidx = -1;
-	for(pagenum_t i=0; i!=end; i++){
+	for(pagenum_t i=head_idx; i!=tail_idx; i=pages[i].nextidx){
 		if(pages[i].pagenum == pagenum){
 			return i;
 		}
