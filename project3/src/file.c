@@ -198,7 +198,7 @@ page_t* file_alloc_page(){
 	else{
 		page_t free_page = {0, };
 		file_write_page(freePageNum = head->header.numOfPages++, &free_page);
-		page_t* page = pages+get_pageidx_by_pagenum(freePageNum);
+		page = pages+get_pageidx_by_pagenum(freePageNum);
 	}
 	++page->pin_count;
 	return page;
