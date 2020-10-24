@@ -42,13 +42,13 @@ void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 }
 
 void remove_buffer_element(page_t* page){
+	int nextidx = page->nextidx, previdx = page->previdx;
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
-		page->is_dirty = 0;
-		pages[page->previdx].nextidx = page->nextidx;
-		pages[page->nextidx].previdx = page->previdx;
 	}
 	memset(page, 0, sizeof(page_t));
+	pages[page->previdx].nextidx = nextidx;
+	pages[page->nextidx].previdx = previdx;
 	return;
 }
 
