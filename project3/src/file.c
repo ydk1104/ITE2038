@@ -59,6 +59,9 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 			}
 		}
 		printf("cannot search\n");
+		for(int i=0; i!=end; i++){
+			printf("%d %d\n", pages[i].pagenum, pages[i].pin_count);
+		}
 		return -1e9;
 	}
 	else{
@@ -127,6 +130,9 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 			}
 		}
 		--node->buffer_ptr->pin_count;
+		if(node->buffer_ptr->pin_count < 0){
+			printf("page_to_node, %ld %d\n", node->buffer_ptr->pagenum, node->buffer_ptr->pin_count);
+		}
 		free(node->keys);
 		free(node->pages);
 		free(*nodeptr);
@@ -214,10 +220,16 @@ void file_free_page(pagenum_t pagenum){
 //	--head->pin_count; - header is already pinned.
 
 	clean.free.nextFreePage = head->header.freePageNum;
+	clean.pagenum = pagenum;
 	head->header.freePageNum = pagenum;
 	head->is_dirty = true;
+	page_t* temp = pages + get_pageidx_by_pagenum(pagenum, false);
+	clean.pin_count = temp->pin_count;
+	*temp = clean;
+	temp->is_dirty = true;
+
 //	file_write_page(0, head);
-	file_write_page(pagenum, &clean);
+//	file_write_page(pagenum, &clean);
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
