@@ -187,20 +187,19 @@ int file_open(char* pathname){
 page_t* file_alloc_page(){
 	const int table_id = 0, fd = table_id_to_fd[table_id];
 	page_t* head = get_header_ptr();
+	page_t* page;
 //	--head->pin_count; - header is already pinned.
 	int freePageNum = head->header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
-		file_read_page(freePageNum, &free_page);
-		head->header.freePageNum = free_page.free.nextFreePage;
+		page = pages+get_pageidx_by_pagenum(frePageNum);
+		head->header.freePageNum = page->free.nextFreePage;
 	}
 	else{
 		page_t free_page = {0, };
 		file_write_page(freePageNum = head->header.numOfPages++, &free_page);
+		page_t* page = pages+get_pageidx_by_pagenum(freePageNum);
 	}
-//	file_write_page(0, head);
-
-	page_t* page = pages+get_pageidx_by_pagenum(freePageNum);
 	++page->pin_count;
 	return page;
 }
