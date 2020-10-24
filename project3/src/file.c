@@ -49,14 +49,18 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
 				pages[i].pagenum = pagenum;
+				pages[i].pin_count++;
 				file_read_page(pagenum, pages+i);
+				pages[i].pin_count--;
 				return i;
 			}
 		}
 	}
 	else{
 		pages[end].pagenum = pagenum;
+		pages[end].pin_count++;
 		file_read_page(pagenum, pages+end);
+		pages[end].pin_count--;
 		return end++;
 	}
 }
@@ -208,7 +212,8 @@ void file_free_page(pagenum_t pagenum){
 
 	clean.free.nextFreePage = head->header.freePageNum;
 	head->header.freePageNum = pagenum;
-	file_write_page(0, head);
+	head->is_dirty = true;
+//	file_write_page(0, head);
 	file_write_page(pagenum, &clean);
 }
 // Read an on-disk page into the in-memory page structure(dest)
