@@ -20,6 +20,15 @@ int init_buffer(int buf_num){
 	return 0;
 }
 
+void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
+	page->pagenum = pagenum;
+	if(is_read){
+		pages->pin_count++;
+		file_read_page(pagenum, page);
+		pages->pin_count--;
+	}
+}
+
 void remove_buffer_element(page_t* page){
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
@@ -58,12 +67,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 		for(pagenum_t i=0; i!=end; i++){
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
-				pages[i].pagenum = pagenum;
-				if(is_read){
-					pages[i].pin_count++;
-					file_read_page(pagenum, pages+i);
-					pages[i].pin_count--;
-				}
+				push_buffer_element(pages+i, pagenum, is_read);
 				return i;
 			}
 		}
@@ -74,12 +78,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 		return -1e9;
 	}
 	else{
-		pages[end].pagenum = pagenum;
-		if(is_read){
-			pages[end].pin_count++;
-			file_read_page(pagenum, pages+end);
-			pages[end].pin_count--;
-		}
+		push_buffer_element(pages+end, pagenum, is_read);
 		return end++;
 	}
 }
