@@ -14,6 +14,7 @@ int open_table (char *pathname){
 		if(strcmp(pathname, pathname_to_table_id[i])) continue;
 		return i + 1; // table_id >= 1
 	}
+	if(open_table_cnt >= TABLE_SIZE) return -1; // table_id <= TABLE_SIZE(10)
 
 	int table_id;
 	table_id = file_open(pathname);
