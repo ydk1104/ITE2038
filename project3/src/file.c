@@ -4,12 +4,19 @@
 int table_id_to_fd[TABLE_SIZE];
 page_t* pages;
 int buf_size;
-int start, temp, end;
+int start, temp, end, head_idx, tail_idx;
 
 int init_buffer(int buf_num){
 	pages = calloc(buf_num, sizeof(page_t));
 	if(pages == NULL) return 1;
 	buf_size = buf_num;
+	for(int i=0; i<buf_num; i++){
+		pages[i].prev = i-1;
+		pages[i].next = i+1;
+	}
+	pages[0].prev = buf_num-1;
+	pages[buf_num-1].next = 0;
+	head_idx = 0, tail_idx = 0;
 	return 0;
 }
 
@@ -233,7 +240,7 @@ void file_free_page(pagenum_t pagenum){
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
-	const int table_id = 0, fd = table_id_to_fd[table_id];
+	const int table_id = dest->table_id, fd = table_id_to_fd[table_id];
 	if(dest->pin_count != 1){
 		printf("read %ld, pin %d\n", pagenum, dest->pin_count);
 	}
@@ -242,7 +249,7 @@ void file_read_page(pagenum_t pagenum, page_t* dest){
 }
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t* src){
-	const int table_id = 0, fd = table_id_to_fd[table_id];
+	const int table_id = src->table_id, fd = table_id_to_fd[table_id];
 	if(src->pin_count != 0){
 		printf("write %ld, pin %d\n", pagenum, src->pin_count);
 	}
