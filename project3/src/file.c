@@ -18,6 +18,7 @@ void remove_buffer_element(page_t* page){
 		file_write_page(page->pagenum, page);
 		page->is_dirty = 0;
 	}
+	memset(page, 0, sizeof(page_t));
 	return;
 }
 
@@ -79,7 +80,6 @@ void node_to_page(struct node** nodeptr, bool doFree){
 	if(page->pin_count != 0)
 		printf("node_to_page : %ld %d\n", node->pagenum, page->pin_count);
 
-	memset(page, 0, sizeof(page_t));
 	page->page.parentPageNum = (pagenum_t)node->parent;
 	page->page.isLeaf = node->is_leaf;
 	page->page.numOfKeys = node->num_keys;
