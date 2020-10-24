@@ -31,9 +31,9 @@ int shutdown_buffer(void){
 void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 	page->pagenum = pagenum;
 	page->nextidx = head_idx;
-	page->previdx = pages[head_idx]->prev_idx;
-	pages[head_idx]->prev_idx = page-pages;
-	pages[page->previdx]->next_idx = page-pages;
+	page->previdx = pages[head_idx].previdx;
+	pages[head_idx].previdx = page-pages;
+	pages[page->previdx].nextidx = page-pages;
 	if(is_read){
 		pages->pin_count++;
 		file_read_page(pagenum, page);
