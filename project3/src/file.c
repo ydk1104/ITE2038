@@ -11,11 +11,11 @@ int init_buffer(int buf_num){
 	if(pages == NULL) return 1;
 	buf_size = buf_num;
 	for(int i=0; i<buf_num; i++){
-		pages[i].prev = i-1;
-		pages[i].next = i+1;
+		pages[i].previdx = i-1;
+		pages[i].nextidx = i+1;
 	}
-	pages[0].prev = buf_num-1;
-	pages[buf_num-1].next = 0;
+	pages[0].previdx = buf_num-1;
+	pages[buf_num-1].nextidx = 0;
 	head_idx = 0, tail_idx = 0;
 	return 0;
 }
@@ -24,6 +24,8 @@ void remove_buffer_element(page_t* page){
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
 		page->is_dirty = 0;
+		pages[page->previdx].nextidx = page->nextidx;
+		pages[page->nextidx].previdx = page->previdx;
 	}
 	memset(page, 0, sizeof(page_t));
 	return;
