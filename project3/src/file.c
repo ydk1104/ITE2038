@@ -139,7 +139,6 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 	page_t* page = pages+pageidx;
 //	if(node->pagenum == pagenum) return; // correct?
 	++page->pin_count;
-	file_read_page(pagenum, page);
 	if(page->pin_count != 1)
 		printf("page_to_node : %ld %d\n", pagenum, page->pin_count);
 
