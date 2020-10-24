@@ -91,6 +91,7 @@ union{
     bool is_leaf;
     int num_keys;
 	pagenum_t pagenum; // Used for disk-io.
+	struct page_t* buffer_ptr; // Used for --buffet_ptr->is_pinned.
 } node;
 
 // GLOBALS.

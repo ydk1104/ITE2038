@@ -10,7 +10,7 @@
 #include<stdbool.h>
 #include<unistd.h>
 typedef uint64_t pagenum_t;
-typedef struct{
+typedef struct page_t{
 // in-memory page structure
 	union{
 		char byte[4096];
@@ -44,7 +44,11 @@ typedef struct{
 					};
 				};
 			};
+			int table_id;
 			pagenum_t pagenum;
+			int is_dirty;
+			int pin_count;
+			int nextidx, previdx;
 		};
 	};
 }page_t;
@@ -54,6 +58,7 @@ typedef struct{
 
 typedef struct node node;
 
+page_t* get_header_ptr(void);
 int init_buffer(int buf_num);
 int shutdown_buffer(void);
 pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum);
@@ -62,7 +67,7 @@ void page_to_node(pagenum_t pagenum, node** nodeptr);
 
 int file_open(char*);
 // Allocate an on-disk page from the free page list
-pagenum_t file_alloc_page();
+page_t* file_alloc_page();
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum);
 // Read an on-disk page into the in-memory page structure(dest)

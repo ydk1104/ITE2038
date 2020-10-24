@@ -10,7 +10,7 @@
 #endif
 
 void insert_test(int N){
-	N *= 2;
+	N /= 10;
 	char s[11] = "0123456789";
 	char val[120];
 	int64_t offset = -5e9;
@@ -97,12 +97,12 @@ void test(TEST test){
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
 		tbl_id = open_table("out/out.txt");
-	page_t head = {0, };
-	file_read_page(0, &head);
+	page_t* head = get_header_ptr();
+	head->pin_count--;
 	printf("header page:%lx %lx %lx\n",
-					head.header.freePageNum,
-					head.header.rootPageNum,
-					head.header.numOfPages);
+					head->header.freePageNum,
+					head->header.rootPageNum,
+					head->header.numOfPages);
 	int N = 1e6;
 	insert_test(N);
 }
@@ -112,6 +112,7 @@ int my_main(){
 	init_db(buff_size);
 	TEST type = TEST_RAM_INSERT;
 	test(type);
+	shutdown_db();
 	return 0;
 }
 

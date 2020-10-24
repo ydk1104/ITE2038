@@ -29,24 +29,26 @@ int open_table (char *pathname){
 //so we use table_id-1
 int db_insert (int table_id, int64_t key, char * value){
 	--table_id;
-	page_t header;
-	file_read_page(0, &header);
-	pagenum_t root = insert(header.header.rootPageNum, key, value);
+//	page_t header;
+//	file_read_page(0, &header);
+	page_t* header = get_header_ptr();
+	pagenum_t root = insert(header->header.rootPageNum, key, value);
 	if(root==-1) return 1;
-	file_read_page(0, &header);
-	if(root != header.header.rootPageNum){
-		header.header.rootPageNum = root;
-		file_write_page(0, &header);
+//	file_read_page(0, &header);
+	if(root != header->header.rootPageNum){
+		header->header.rootPageNum = root;
+		header->is_dirty = true;
 	}
+	--header->pin_count;
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base
 //so we use table_id-1
 int db_find (int table_id, int64_t key, char * ret_val){
 	--table_id;
-	page_t header;
-	file_read_page(0, &header);
-	int idx = find(header.header.rootPageNum, key, ret_val);
+	page_t* header = get_header_ptr();
+	int idx = find(header->header.rootPageNum, key, ret_val);
+	--header->pin_count;
 	if(idx == -1) return 1;
 	return 0;
 }
@@ -54,15 +56,14 @@ int db_find (int table_id, int64_t key, char * ret_val){
 //so we use table_id-1
 int db_delete (int table_id, int64_t key){
 	--table_id;
-	page_t header;
-	file_read_page(0, &header);
-	pagenum_t root = delete(header.header.rootPageNum, key);
+	page_t* header = get_header_ptr();
+	pagenum_t root = delete(header->header.rootPageNum, key);
 	if(root==-1) return 1;
-	file_read_page(0, &header);
-	if(root != header.header.rootPageNum){
-		header.header.rootPageNum = root;
-		file_write_page(0, &header);
+	if(root != header->header.rootPageNum){
+		header->header.rootPageNum = root;
+		header->is_dirty = true;
 	}
+	--header->pin_count;
 	return 0;
 }
 int close_table(int table_id){

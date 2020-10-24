@@ -198,6 +198,7 @@ int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose
 
 void free_node(node** node_ptr){
 	node* node = *node_ptr;
+	--node->buffer_ptr->pin_count;
 	if(node->is_leaf){
 		for(int i=0; i<node->num_keys; i++){
 			free(node->pointers[i]);
@@ -308,7 +309,8 @@ node * make_node( void ) {
     new_node->num_keys = 0;
     new_node->parent = 0;
 
-	new_node->pagenum = file_alloc_page();
+	new_node->buffer_ptr = file_alloc_page();
+	new_node->pagenum = new_node->buffer_ptr->pagenum;
     return new_node;
 }
 
