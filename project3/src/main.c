@@ -13,7 +13,7 @@ void insert_test(int N){
 	N /= 10;
 	char s[11] = "0123456789";
 	char val[120];
-	int64_t offset = -5e9;
+	int64_t offset = 0;
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
 		int error = db_insert(0, key, s+(i%10));

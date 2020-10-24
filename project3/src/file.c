@@ -46,9 +46,9 @@ void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 	head_idx = page-pages;
 	tail_idx = page->previdx;
 	if(is_read){
-		pages->pin_count++;
+		page->pin_count++;
 		file_read_page(pagenum, page);
-		pages->pin_count--;
+		page->pin_count--;
 	}
 }
 
@@ -78,7 +78,8 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 	print_buffer();
 
 	pagenum_t pageidx = -1;
-	for(pagenum_t i=head_idx; i!=tail_idx; i=pages[i].nextidx){
+//	for(pagenum_t i=head_idx; i!=tail_idx; i=pages[i].nextidx){
+	for(int i=0; i!=end; i++){
 		if(pages[i].pagenum == pagenum){
 			return i;
 		}
@@ -253,6 +254,8 @@ void file_free_page(pagenum_t pagenum){
 	head->is_dirty = true;
 	page_t* temp = pages + get_pageidx_by_pagenum(pagenum, false);
 	clean.pin_count = temp->pin_count;
+	clean.nextidx = temp->nextidx;
+	clean.previdx = temp->previdx;
 	*temp = clean;
 	temp->is_dirty = true;
 
