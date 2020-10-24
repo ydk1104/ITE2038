@@ -192,7 +192,7 @@ page_t* file_alloc_page(){
 	int freePageNum = head->header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
-		page = pages+get_pageidx_by_pagenum(frePageNum);
+		page = pages+get_pageidx_by_pagenum(freePageNum);
 		head->header.freePageNum = page->free.nextFreePage;
 	}
 	else{
