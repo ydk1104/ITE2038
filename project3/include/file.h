@@ -61,7 +61,7 @@ typedef struct node node;
 page_t* get_header_ptr(void);
 int init_buffer(int buf_num);
 int shutdown_buffer(void);
-pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum);
+pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read);
 void node_to_page(node** nodeptr, bool do_free);
 void page_to_node(pagenum_t pagenum, node** nodeptr);
 

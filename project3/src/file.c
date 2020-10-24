@@ -30,14 +30,14 @@ int shutdown_buffer(void){
 }
 
 page_t* get_header_ptr(void){
-	pagenum_t pageidx = get_pageidx_by_pagenum(0);
+	pagenum_t pageidx = get_pageidx_by_pagenum(0, true);
 	page_t *page = pages+pageidx;
 	if(page->pin_count > 0) return page;
 	++page->pin_count;
 	return page;
 }
 
-pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
+pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 	pagenum_t pageidx = -1;
 	for(pagenum_t i=0; i!=end; i++){
 		if(pages[i].pagenum == pagenum){
@@ -49,18 +49,22 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
 				pages[i].pagenum = pagenum;
-				pages[i].pin_count++;
-				file_read_page(pagenum, pages+i);
-				pages[i].pin_count--;
+				if(is_read){
+					pages[i].pin_count++;
+					file_read_page(pagenum, pages+i);
+					pages[i].pin_count--;
+				}
 				return i;
 			}
 		}
 	}
 	else{
 		pages[end].pagenum = pagenum;
-		pages[end].pin_count++;
-		file_read_page(pagenum, pages+end);
-		pages[end].pin_count--;
+		if(is_read){
+			pages[end].pin_count++;
+			file_read_page(pagenum, pages+end);
+			pages[end].pin_count--;
+		}
 		return end++;
 	}
 }
@@ -68,7 +72,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum){
 void node_to_page(struct node** nodeptr, bool doFree){
 	if(*nodeptr == NULL) return;
 	struct node* node = *nodeptr;
-	pagenum_t pageidx = get_pageidx_by_pagenum(node->pagenum);
+	pagenum_t pageidx = get_pageidx_by_pagenum(node->pagenum, false);
 	page_t *page = pages+pageidx;
 
 	--page->pin_count;
@@ -94,7 +98,8 @@ void node_to_page(struct node** nodeptr, bool doFree){
 			page->internal[i].pageNum = node->pages[i+1];
 		}
 	}
-	file_write_page(node->pagenum, page);
+//	file_write_page(node->pagenum, page);
+	page->is_dirty = true;
 	if(doFree){
 		free(node->keys);
 		if(node->is_leaf){
@@ -130,7 +135,7 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 	}
 	*nodeptr = node = malloc(sizeof(struct node));
 
-	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum);	
+	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum, true);	
 	page_t* page = pages+pageidx;
 //	if(node->pagenum == pagenum) return; // correct?
 	++page->pin_count;
@@ -178,7 +183,7 @@ int file_open(char* pathname){
 		page_t src = {0, };
 		src.header.numOfPages = 1;
 		table_id_to_fd[table_id] = fd;
-		file_write_page(0, &src);
+		//file_write_page(0, &src);
 	}
 	else table_id_to_fd[table_id] = fd;
 	return table_id++;
@@ -192,13 +197,13 @@ page_t* file_alloc_page(){
 	int freePageNum = head->header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
-		page = pages+get_pageidx_by_pagenum(freePageNum);
+		page = pages+get_pageidx_by_pagenum(freePageNum, true);
 		head->header.freePageNum = page->free.nextFreePage;
 	}
 	else{
 		page_t free_page = {0, };
-		file_write_page(freePageNum = head->header.numOfPages++, &free_page);
-		page = pages+get_pageidx_by_pagenum(freePageNum);
+		page = pages+get_pageidx_by_pagenum(freePageNum, false);
+		*page = free_page;
 	}
 	++page->pin_count;
 	return page;
