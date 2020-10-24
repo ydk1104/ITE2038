@@ -20,8 +20,20 @@ int init_buffer(int buf_num){
 	return 0;
 }
 
+int shutdown_buffer(void){
+	for(int i=0; i!=end; i++){
+		remove_buffer_element(pages+i);
+	}
+	free(pages);
+	return 0;
+}
+
 void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 	page->pagenum = pagenum;
+	page->nextidx = head_idx;
+	page->previdx = pages[head_idx]->prev_idx;
+	pages[head_idx]->prev_idx = page-pages;
+	pages[page->previdx]->next_idx = page-pages;
 	if(is_read){
 		pages->pin_count++;
 		file_read_page(pagenum, page);
@@ -38,14 +50,6 @@ void remove_buffer_element(page_t* page){
 	}
 	memset(page, 0, sizeof(page_t));
 	return;
-}
-
-int shutdown_buffer(void){
-	for(int i=0; i!=end; i++){
-		remove_buffer_element(pages+i);
-	}
-	free(pages);
-	return 0;
 }
 
 page_t* get_header_ptr(bool is_read){
