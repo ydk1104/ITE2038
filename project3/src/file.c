@@ -29,10 +29,15 @@ int init_buffer(int buf_num){
 }
 
 int shutdown_buffer(void){
-	for(int i=0; i!=size; i++){
-		printf("%d %d\n", pages[i].previdx, pages[i].nextidx);
+	print_buffer();
+	for(int i=headidx, next; i!=tailidx; i=next){
+		if(i>=1000 || i<0){
+			printf("at %d bomb\n", i);
+		}
+		next = pages[i].nextidx;
 		remove_buffer_element(pages+i);
 	}
+	remove_buffer_element(pages+tailidx);
 	free(pages);
 	return 0;
 }
