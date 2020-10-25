@@ -7,12 +7,14 @@ int buf_size;
 int start, temp, size, headidx, tailidx;
 
 void print_buffer(){
+#ifdef PRINT
 	int prev = tailidx;
 	for(int i=headidx; i!=tailidx; i=pages[i].nextidx){
 		if(pages[i].previdx != prev)
 		printf("%d : %d %d\n", i, pages[i].previdx, pages[i].nextidx);
 		prev=i;
 	}
+#endif
 }
 
 int init_buffer(int buf_num){
