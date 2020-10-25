@@ -44,13 +44,14 @@ int shutdown_buffer(void){
 	return 0;
 }
 
-void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
+void push_buffer_element(page_t* page, int table_id, pagenum_t pagenum, bool is_read){
 
 	//push a node already exist
 	if(page-pages == headidx){
 		printf("push_error\n");
 	}
 
+	page->table_id = table_id;
 	page->pagenum = pagenum;
 	//empty list
 	if(size == 0){
@@ -59,7 +60,6 @@ void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
 		page->previdx = tailidx;
 	}
 	else{
-		page->pagenum = pagenum;
 		page->nextidx = headidx;
 		page->previdx = tailidx;
 		pages[headidx].previdx = page-pages;
@@ -95,28 +95,31 @@ void remove_buffer_element(page_t* page){
 	return;
 }
 
-page_t* get_header_ptr(bool is_read){
-	pagenum_t pageidx = get_pageidx_by_pagenum(0, is_read);
+page_t* get_header_ptr(int table_id, bool is_read){
+	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, 0, is_read);
 	page_t *page = pages+pageidx;
-	if(page->pin_count > 0) return page;
+	if(page->pin_count > 0){
+		printf("Error\n");
+		return page;
+	}
 	++page->pin_count;
 	return page;
 }
 
-pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
-
-	print_buffer();
+pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 
 	//empty list
 	if(size == 0){
-		push_buffer_element(pages+0, pagenum, is_read);
+		push_buffer_element(pages+0, table_id, pagenum, is_read);
 		return 0;
 	}
 
 	//search page, head to tail
-	if(pages[headidx].pagenum == pagenum) return headidx;
+	if( pages[headidx].table_id == table_id &&
+		pages[headidx].pagenum == pagenum) return headidx;
 	for(pagenum_t i=pages[headidx].nextidx; i!=headidx; i=pages[i].nextidx){
-		if(pages[i].pagenum == pagenum){
+		if( pages[i].table_id == table_id && 
+			pages[i].pagenum == pagenum){
 			return i;
 		}
 	}
@@ -128,7 +131,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
 				//push head after pop, so size is consistent
-				push_buffer_element(pages+i, pagenum, is_read);
+				push_buffer_element(pages+i, table_id, pagenum, is_read);
 				return i;
 			}
 		}
@@ -137,7 +140,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 	}
 	else{
 		// increment size
-		push_buffer_element(pages+size, pagenum, is_read);
+		push_buffer_element(pages+size, table_id, pagenum, is_read);
 		return size-1;
 	}
 }
@@ -145,7 +148,7 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 void node_to_page(struct node** nodeptr, bool doFree){
 	if(*nodeptr == NULL) return;
 	struct node* node = *nodeptr;
-	pagenum_t pageidx = get_pageidx_by_pagenum(node->pagenum, false);
+	pagenum_t pageidx = get_pageidx_by_pagenum(node->table_id, node->pagenum, false);
 	page_t *page = pages+pageidx;
 
 	--page->pin_count;
@@ -185,7 +188,7 @@ void node_to_page(struct node** nodeptr, bool doFree){
 	}
 }
 
-void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
+void page_to_node(int table_id, pagenum_t pagenum, struct node ** nodeptr){
 	int leaf_order = DEFAULT_LEAF_ORDER,
 		internal_order = DEFAULT_INTERNAL_ORDER;
 	
@@ -210,7 +213,7 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 	}
 	*nodeptr = node = malloc(sizeof(struct node));
 
-	pagenum_t pageidx = get_pageidx_by_pagenum(pagenum, true);	
+	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, pagenum, true);	
 	page_t* page = pages+pageidx;
 //	if(node->pagenum == pagenum) return; // correct?
 	++page->pin_count;
@@ -221,6 +224,7 @@ void page_to_node(pagenum_t pagenum, struct node ** nodeptr){
 	node->is_leaf = page->page.isLeaf;
 	node->num_keys = page->page.numOfKeys;
 	node->pagenum = pagenum;
+	node->table_id = table_id;
 	node->buffer_ptr = page;
 	if(node -> is_leaf){
 		node->keys = malloc((leaf_order - 1) * sizeof(int64_t));
@@ -254,43 +258,43 @@ int file_open(char* pathname){
 			puts("file create error");
 			return -1;
 		}
-		page_t *head = get_header_ptr(false);
+		table_id_to_fd[table_id] = fd;
+		page_t *head = get_header_ptr(table_id, false);
 		head->header.numOfPages = 1;
 		--head->pin_count;
-		table_id_to_fd[table_id] = fd;
 	}
 	else table_id_to_fd[table_id] = fd;
 	return table_id++;
 }
 // Allocate an on-disk page from the free page list
-page_t* file_alloc_page(){
-	const int table_id = 0, fd = table_id_to_fd[table_id];
-	page_t* head = get_header_ptr(true);
+page_t* file_alloc_page(int table_id){
+	const int fd = table_id_to_fd[table_id];
+	page_t* head = get_header_ptr(table_id, true);
 	page_t* page;
 //	--head->pin_count; - header is already pinned.
 	int freePageNum = head->header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
-		page = pages+get_pageidx_by_pagenum(freePageNum, true);
+		page = pages+get_pageidx_by_pagenum(table_id, freePageNum, true);
 		head->header.freePageNum = page->free.nextFreePage;
 	}
 	else{
-		page = pages+get_pageidx_by_pagenum(freePageNum = head->header.numOfPages++, false);
+		page = pages+get_pageidx_by_pagenum(table_id, freePageNum = head->header.numOfPages++, false);
 	}
 	++page->pin_count;
 	return page;
 }
 // Free an on-disk page to the free page list
-void file_free_page(pagenum_t pagenum){
-	const int table_id = 0, fd = table_id_to_fd[table_id];
-	page_t clean = {0, }, *head = get_header_ptr(true);
+void file_free_page(int table_id, pagenum_t pagenum){
+	const int fd = table_id_to_fd[table_id];
+	page_t clean = {0, }, *head = get_header_ptr(table_id, true);
 //	--head->pin_count; - header is already pinned.
 
 	clean.free.nextFreePage = head->header.freePageNum;
 	clean.pagenum = pagenum;
 	head->header.freePageNum = pagenum;
 	head->is_dirty = true;
-	page_t* temp = pages + get_pageidx_by_pagenum(pagenum, false);
+	page_t* temp = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
 	clean.pin_count = temp->pin_count;
 	clean.nextidx = temp->nextidx;
 	clean.previdx = temp->previdx;

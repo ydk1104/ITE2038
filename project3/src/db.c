@@ -32,7 +32,7 @@ int db_insert (int table_id, int64_t key, char * value){
 //	page_t header;
 //	file_read_page(0, &header);
 	page_t* header = get_header_ptr(true);
-	pagenum_t root = insert(header->header.rootPageNum, key, value);
+	pagenum_t root = insert(table_id, header->header.rootPageNum, key, value);
 	if(root==-1) return 1;
 //	file_read_page(0, &header);
 	if(root != header->header.rootPageNum){
@@ -47,7 +47,7 @@ int db_insert (int table_id, int64_t key, char * value){
 int db_find (int table_id, int64_t key, char * ret_val){
 	--table_id;
 	page_t* header = get_header_ptr(true);
-	int idx = find(header->header.rootPageNum, key, ret_val);
+	int idx = find(table_id, header->header.rootPageNum, key, ret_val);
 	--header->pin_count;
 	if(idx == -1) return 1;
 	return 0;
@@ -57,7 +57,7 @@ int db_find (int table_id, int64_t key, char * ret_val){
 int db_delete (int table_id, int64_t key){
 	--table_id;
 	page_t* header = get_header_ptr(true);
-	pagenum_t root = delete(header->header.rootPageNum, key);
+	pagenum_t root = delete(table_id, header->header.rootPageNum, key);
 	if(root==-1) return 1;
 	if(root != header->header.rootPageNum){
 		header->header.rootPageNum = root;

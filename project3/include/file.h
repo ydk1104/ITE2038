@@ -60,18 +60,18 @@ typedef struct node node;
 
 int init_buffer(int buf_num);
 int shutdown_buffer(void);
-void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read);
+void push_buffer_element(page_t* page, int table_id, pagenum_t pagenum, bool is_read);
 void remove_buffer_element(page_t* page);
-page_t* get_header_ptr(bool is_read);
-pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read);
+page_t* get_header_ptr(int table_id, bool is_read);
+pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read);
 void node_to_page(node** nodeptr, bool do_free);
-void page_to_node(pagenum_t pagenum, node** nodeptr);
+void page_to_node(int table_id, pagenum_t pagenum, node** nodeptr);
 
 int file_open(char*);
 // Allocate an on-disk page from the free page list
-page_t* file_alloc_page();
+page_t* file_alloc_page(int table_id);
 // Free an on-disk page to the free page list
-void file_free_page(pagenum_t pagenum);
+void file_free_page(int table_id, pagenum_t pagenum);
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest);
 // Write an in-memory page(src) to the on-disk page
