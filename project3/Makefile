@@ -22,7 +22,7 @@ SRCS_FOR_LIB:= \
 
 OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.c=.o)
 
-CFLAGS+= -pg -fPIC -I $(INC)
+CFLAGS+= -g -fPIC -I $(INC)
 
 TARGET=main
 

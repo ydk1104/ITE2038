@@ -311,7 +311,8 @@ node * make_node( int table_id ) {
 
 	new_node->buffer_ptr = file_alloc_page(table_id);
 	new_node->pagenum = new_node->buffer_ptr->pagenum;
-    return new_node;
+   	new_node->table_id = table_id;
+	return new_node;
 }
 
 /* Creates a new leaf by creating a node

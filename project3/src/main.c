@@ -16,25 +16,25 @@ void insert_test(int N){
 	int64_t offset = 0;
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_insert(0, key, s+(i%10));
+		int error = db_insert(2, key, s+(i%10));
 		printf("insert test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}// */
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(0, key, val);
+		int error = db_find(2, key, val);
 		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_delete(0, key);
+		int error = db_delete(2, key);
 		printf("delete test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(0, key, val);
+		int error = db_find(2, key, val);
 		printf("not find test : %ld\n", key);
 		if(!error) printf("FAILED"), exit(-1);
 	} // */
@@ -93,7 +93,7 @@ void test(TEST test){
 		return;
 	}
 	int tbl_id;
-//	open_table("out/out.txt");
+	open_table("/mnt/ramdisk/out2.txt");
 	if(test == TEST_RAM_INSERT)
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
