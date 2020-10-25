@@ -98,7 +98,7 @@ void remove_buffer_element(page_t* page){
 page_t* get_header_ptr(int table_id, bool is_read){
 	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, 0, is_read);
 	page_t *page = pages+pageidx;
-	if(page->pin_count > 0){
+	if(page->pin_count > 1){
 		printf("Error\n");
 		return page;
 	}
@@ -126,15 +126,16 @@ pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 
 	if(size == buf_size){
 		//search victim, tail to head
-		if(pages[tailidx].pin_count == 0) return tailidx;
-		for(pagenum_t i=pages[tailidx].previdx; i!=tailidx; i=pages[i].previdx){
+		int i = tailidx;
+		do{
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
 				//push head after pop, so size is consistent
 				push_buffer_element(pages+i, table_id, pagenum, is_read);
 				return i;
 			}
-		}
+			i = pages[i].previdx;
+		}while(i != tailidx);
 		printf("cannot search\n");
 		exit(-1);
 	}
@@ -271,7 +272,7 @@ page_t* file_alloc_page(int table_id){
 	const int fd = table_id_to_fd[table_id];
 	page_t* head = get_header_ptr(table_id, true);
 	page_t* page;
-//	--head->pin_count; - header is already pinned.
+	--head->pin_count;// - header is already pinned, but pin_count == 2
 	int freePageNum = head->header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
@@ -288,7 +289,7 @@ page_t* file_alloc_page(int table_id){
 void file_free_page(int table_id, pagenum_t pagenum){
 	const int fd = table_id_to_fd[table_id];
 	page_t clean = {0, }, *head = get_header_ptr(table_id, true);
-//	--head->pin_count; - header is already pinned.
+	--head->pin_count; //- header is already pinned., but pin_count == 2
 
 	clean.free.nextFreePage = head->header.freePageNum;
 	clean.pagenum = pagenum;
