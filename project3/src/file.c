@@ -4,11 +4,11 @@
 int table_id_to_fd[TABLE_SIZE];
 page_t* pages;
 int buf_size;
-int start, temp, end, head_idx, tail_idx;
+int start, temp, size, headidx, tailidx;
 
 void print_buffer(){
-	int prev = tail_idx;
-	for(int i=head_idx; i!=tail_idx; i=pages[i].nextidx){
+	int prev = tailidx;
+	for(int i=headidx; i!=tailidx; i=pages[i].nextidx){
 		if(pages[i].previdx != prev)
 		printf("%d : %d %d\n", i, pages[i].previdx, pages[i].nextidx);
 		prev=i;
@@ -20,18 +20,17 @@ int init_buffer(int buf_num){
 	if(pages == NULL) return 1;
 	buf_size = buf_num;
 	for(int i=0; i<buf_num; i++){
-		pages[i].previdx = i-1;
-		pages[i].nextidx = i+1;
+		pages[i].previdx = -1;
+		pages[i].nextidx = -1;
 		pages[i].pagenum = -1;
 	}
-	pages[0].previdx = buf_num-1;
-	pages[buf_num-1].nextidx = 0;
-	head_idx = 0, tail_idx = 0;
+	headidx = -1, tailidx = -1;
 	return 0;
 }
 
 int shutdown_buffer(void){
 	for(int i=0; i!=end; i++){
+		printf("%d %d\n", pages[i].previdx, pages[i].nextidx);
 		remove_buffer_element(pages+i);
 	}
 	free(pages);
@@ -39,13 +38,29 @@ int shutdown_buffer(void){
 }
 
 void push_buffer_element(page_t* page, pagenum_t pagenum, bool is_read){
+
+	//push a node already exist
+	if(page-pages == headidx){
+		printf("push_error\n");
+	}
+
 	page->pagenum = pagenum;
-	page->nextidx = head_idx;
-	page->previdx = pages[head_idx].previdx;
-	pages[head_idx].previdx = page-pages;
-	pages[page->previdx].nextidx = page-pages;
-	head_idx = page-pages;
-	tail_idx = page->previdx;
+	//empty list
+	if(size == 0){
+		headidx = tailidx = page-pages;
+		page->nextidx = headidx;
+		page->previdx = tailidx;
+	}
+	else{
+		page->pagenum = pagenum;
+		page->nextidx = headidx;
+		page->previdx = tailidx;
+		pages[headidx].previdx = page-pages;
+		pages[tailidx].nextidx = page-pages;
+		headidx = page-pages;
+		tailidx = page->previdx;
+	}
+	size++;
 	if(is_read){
 		page->pin_count++;
 		file_read_page(pagenum, page);
@@ -59,10 +74,17 @@ void remove_buffer_element(page_t* page){
 		file_write_page(page->pagenum, page);
 	}
 	memset(page, 0, sizeof(page_t));
+	//one node
+	if(size == 1){
+		headidx = tailidx = -1;
+		size--;
+		return;
+	}
 	pages[previdx].nextidx = nextidx;
 	pages[nextidx].previdx = previdx;
-	if(head_idx == page-pages) head_idx = nextidx;
-	if(tail_idx == page-pages) tail_idx = previdx;
+	if(headidx == page-pages) headidx = nextidx;
+	if(tailidx == page-pages) tailidx = previdx;
+	size--;
 	return;
 }
 
@@ -78,31 +100,38 @@ pagenum_t get_pageidx_by_pagenum(pagenum_t pagenum, bool is_read){
 
 	print_buffer();
 
-	pagenum_t pageidx = -1;
-	if(pages[head_idx].pagenum == pagenum) return head_idx;
-	for(pagenum_t i=pages[head_idx].nextidx; i!=head_idx; i=pages[i].nextidx){
+	//empty list
+	if(size == 0){
+		push_buffer_element(pages+0, pagenum, is_read);
+		return 0;
+	}
+
+	//search page, head to tail
+	if(pages[headidx].pagenum == pagenum) return headidx;
+	for(pagenum_t i=pages[headidx].nextidx; i!=headidx; i=pages[i].nextidx){
 		if(pages[i].pagenum == pagenum){
 			return i;
 		}
 	}
 
-	if(end == buf_size){
-		for(pagenum_t i=0; i!=end; i++){
+	if(size == buf_size){
+		//search victim, tail to head
+		if(pages[tailidx].pin_count == 0) return tailidx;
+		for(pagenum_t i=pages[tailidx].previdx; i!=tailidx; i=pages[i].previdx){
 			if(pages[i].pin_count == 0){
 				remove_buffer_element(pages+i);
+				//push head after pop, so size is consistent
 				push_buffer_element(pages+i, pagenum, is_read);
 				return i;
 			}
 		}
 		printf("cannot search\n");
-		for(int i=0; i!=end; i++){
-			printf("%d %d\n", pages[i].pagenum, pages[i].pin_count);
-		}
-		return -1e9;
+		exit(-1);
 	}
 	else{
-		push_buffer_element(pages+end, pagenum, is_read);
-		return end++;
+		// increment size
+		push_buffer_element(pages+size, pagenum, is_read);
+		return size-1;
 	}
 }
 
