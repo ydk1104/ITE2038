@@ -163,7 +163,6 @@ void node_to_page(struct node** nodeptr, bool doFree){
 			page->internal[i].pageNum = node->pages[i+1];
 		}
 	}
-//	file_write_page(node->pagenum, page);
 	page->is_dirty = true;
 	if(doFree){
 		free(node->keys);
@@ -192,7 +191,7 @@ void page_to_node(int table_id, pagenum_t pagenum, struct node ** nodeptr){
 		--node->buffer_ptr->pin_count;
 //		if(node->buffer_ptr->pin_count < 0){
 //			printf("page_to_node, %ld %d\n", node->buffer_ptr->pagenum, node->buffer_ptr->pin_count);
-		}
+//		}
 		free(node->keys);
 		free(node->pages);
 		free(*nodeptr);
@@ -292,8 +291,6 @@ void file_free_page(int table_id, pagenum_t pagenum){
 	*temp = clean;
 	temp->is_dirty = true;
 
-//	file_write_page(0, head);
-//	file_write_page(pagenum, &clean);
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
