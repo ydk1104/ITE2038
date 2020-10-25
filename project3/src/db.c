@@ -67,6 +67,7 @@ int db_delete (int table_id, int64_t key){
 	return 0;
 }
 int close_table(int table_id){
+	return close_buffer(table_id);
 }
 int shutdown_db(void){
 	return shutdown_buffer();

@@ -59,6 +59,7 @@ typedef struct page_t{
 typedef struct node node;
 
 int init_buffer(int buf_num);
+int close_buffer(int table_id);
 int shutdown_buffer(void);
 void push_buffer_element(page_t* page, int table_id, pagenum_t pagenum, bool is_read);
 void remove_buffer_element(page_t* page);

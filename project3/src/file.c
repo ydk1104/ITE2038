@@ -19,6 +19,17 @@ int init_buffer(int buf_num){
 	return 0;
 }
 
+int close_buffer(int table_id){
+	for(int i=headidx, next; i!=tailidx; i=next){
+		next = pages[i].nextidx;
+		if(pages[i].table_id == table_id)
+			remove_buffer_element(pages+i);
+	}
+	if(pages[tailidx].table_id == table_id)
+		remove_buffer_element(pages+tailidx);
+	return 0;
+}
+
 int shutdown_buffer(void){
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
