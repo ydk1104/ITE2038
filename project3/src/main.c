@@ -111,7 +111,7 @@ void test(TEST test){
 }
 
 int my_main(){
-	const int buff_size = 1000;
+	const int buff_size = 10000;
 	init_db(buff_size);
 	TEST type = TEST_RAM_INSERT;
 	test(type);
