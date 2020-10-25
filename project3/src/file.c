@@ -293,6 +293,7 @@ void file_free_page(int table_id, pagenum_t pagenum){
 
 	clean.free.nextFreePage = head->header.freePageNum;
 	clean.pagenum = pagenum;
+	clean.table_id = table_id;
 	head->header.freePageNum = pagenum;
 	head->is_dirty = true;
 	page_t* temp = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
