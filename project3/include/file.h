@@ -62,6 +62,7 @@ int init_buffer(int buf_num);
 int shutdown_buffer(void);
 void push_buffer_element(page_t* page, int table_id, pagenum_t pagenum, bool is_read);
 void remove_buffer_element(page_t* page);
+void pop_buffer_element(page_t* page);
 page_t* get_header_ptr(int table_id, bool is_read);
 pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read);
 void node_to_page(node** nodeptr, bool do_free);

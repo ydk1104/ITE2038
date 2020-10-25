@@ -76,17 +76,22 @@ void push_buffer_element(page_t* page, int table_id, pagenum_t pagenum, bool is_
 }
 
 void remove_buffer_element(page_t* page){
-	int nextidx = page->nextidx, previdx = page->previdx;
+	pop_buffer_element(page);
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
 	}
 	memset(page, 0, sizeof(page_t));
+	return;
+}
+
+void pop_buffer_element(page_t* page){
 	//one node
 	if(size == 1){
 		headidx = tailidx = -1;
 		size--;
 		return;
 	}
+	int nextidx = page->nextidx, previdx = page->previdx;
 	pages[previdx].nextidx = nextidx;
 	pages[nextidx].previdx = previdx;
 	if(headidx == page-pages) headidx = nextidx;
@@ -115,14 +120,18 @@ pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 	}
 
 	//search page, head to tail
-	if( pages[headidx].table_id == table_id &&
-		pages[headidx].pagenum == pagenum) return headidx;
-	for(pagenum_t i=pages[headidx].nextidx; i!=headidx; i=pages[i].nextidx){
-		if( pages[i].table_id == table_id && 
-			pages[i].pagenum == pagenum){
+	int i = headidx;
+	do{
+		if( pages[i].table_id == table_id &&
+		    pages[i].pagenum == pagenum){
+			//LRU Policy
+			//pop and push, move head
+			pop_buffer_element(pages+i);
+			push_buffer_element(pages+i, table_id, pagenum, false);
 			return i;
 		}
-	}
+		i = pages[i].nextidx;
+	}while(i!=headidx);
 
 	if(size == buf_size){
 		//search victim, tail to head
