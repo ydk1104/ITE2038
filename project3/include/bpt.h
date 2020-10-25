@@ -127,17 +127,17 @@ void print_license( int licence_part );
 void usage_1( void );
 void usage_2( void );
 void usage_3( void );
-int find_range( pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
+int find_range( int table_id, pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
         int64_t returned_keys[], void * returned_pointers[]); 
-node * find_leaf( pagenum_t root, int64_t key);
-int find( pagenum_t root, int64_t key, char* ret_val);
+node * find_leaf( int table_id, pagenum_t root, int64_t key);
+int find( int table_id, pagenum_t root, int64_t key, char* ret_val);
 int cut( int length );
 
 // Insertion.
 
 record * make_record(const char* value);
-node * make_node( void );
-node * make_leaf( void );
+node * make_node( int table_id );
+node * make_leaf( int table_id );
 int get_left_index(node * parent, pagenum_t pagenum);
 node * insert_into_leaf( node * leaf, int64_t key, record * pointer );
 pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key,
@@ -149,19 +149,19 @@ pagenum_t insert_into_node_after_splitting(pagenum_t root, node * parent,
         int64_t key, pagenum_t right_pagenum);
 pagenum_t insert_into_parent(pagenum_t root, node * left, int64_t key, node * right);
 pagenum_t insert_into_new_root(node * left, int64_t key, node * right);
-pagenum_t start_new_tree(int64_t key, record * pointer);
-pagenum_t insert( pagenum_t root, int64_t key, const char* value );
+pagenum_t start_new_tree(int table_id, int64_t key, record * pointer);
+pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value );
 
 // Deletion.
 
 int get_neighbor_index( node * n );
 pagenum_t adjust_root(node * root);
-pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor,
+pagenum_t coalesce_nodes( pagenum_t root, node * n, node * neighbor,
                       int neighbor_index, int64_t k_prime);
-pagenum_t redistribute_nodes(pagenum_t root, node * n, node * neighbor,
+pagenum_t redistribute_nodes( pagenum_t root, node * n, node * neighbor,
                           int neighbor_index,
         int64_t k_prime_index, int64_t k_prime);
 pagenum_t delete_entry( pagenum_t root, node * n, int64_t key, void * pointer );
-pagenum_t delete( pagenum_t root, int64_t key );
+pagenum_t delete( int table_id, pagenum_t root, int64_t key );
 
 #endif /* __BPT_H__*/
