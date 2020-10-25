@@ -29,7 +29,7 @@ int init_buffer(int buf_num){
 }
 
 int shutdown_buffer(void){
-	for(int i=0; i!=end; i++){
+	for(int i=0; i!=size; i++){
 		printf("%d %d\n", pages[i].previdx, pages[i].nextidx);
 		remove_buffer_element(pages+i);
 	}
