@@ -2,14 +2,15 @@
 #include<db.h>
 #include<file.h>
 
+char* pathname_to_table_id[TABLE_SIZE];
+int open_table_cnt;
+
 int init_db (int buf_num){
 	return init_buffer(buf_num);
 }
 //in db, table_id is 0 base, but output is 1 base
 //so return table_id+1
 int open_table (char *pathname){
-	static char* pathname_to_table_id[TABLE_SIZE] = {0, };
-	static int open_table_cnt = 0;
 	for(int i=0; i<open_table_cnt; i++){ // 0 base
 		if(strcmp(pathname, pathname_to_table_id[i])) continue;
 		return i + 1; // table_id >= 1
@@ -69,6 +70,12 @@ int db_delete (int table_id, int64_t key){
 int close_table(int table_id){
 	return close_buffer(table_id);
 }
+
 int shutdown_db(void){
+	for(int i=0; i<open_table_cnt; i++){
+		free(pathname_to_table_id[i]);
+		pathname_to_table_id[i] = NULL;
+	}
+	open_table_cnt = 0;
 	return shutdown_buffer();
 }

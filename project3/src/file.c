@@ -1,6 +1,7 @@
 #include<db.h>
 #include<file.h>
 
+int table_count;
 int table_id_to_fd[TABLE_SIZE];
 page_t* pages;
 int buf_size;
@@ -16,6 +17,9 @@ int init_buffer(int buf_num){
 		pages[i].pagenum = -1;
 	}
 	headidx = -1, tailidx = -1;
+	
+	table_count = 0;
+
 	return 0;
 }
 
@@ -250,7 +254,6 @@ void page_to_node(int table_id, pagenum_t pagenum, struct node ** nodeptr){
 
 int file_open(char* pathname){
 	int fd;
-	static int table_id = 0;
 	fd = open(pathname, O_RDWR | O_SYNC);
 	if(fd == -1){ // pathname does not exist
 		fd = open(pathname, O_RDWR | O_CREAT | O_SYNC, 0666);
@@ -258,13 +261,13 @@ int file_open(char* pathname){
 			puts("file create error");
 			return -1;
 		}
-		table_id_to_fd[table_id] = fd;
-		page_t *head = get_header_ptr(table_id, false);
+		table_id_to_fd[table_count] = fd;
+		page_t *head = get_header_ptr(table_count, false);
 		head->header.numOfPages = 1;
 		--head->pin_count;
 	}
-	else table_id_to_fd[table_id] = fd;
-	return table_id++;
+	else table_id_to_fd[table_count] = fd;
+	return table_count++;
 }
 // Allocate an on-disk page from the free page list
 page_t* file_alloc_page(int table_id){
