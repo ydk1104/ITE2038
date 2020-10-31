@@ -26,19 +26,25 @@ int init_buffer(int buf_num){
 int close_buffer(int table_id){
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
-		if(pages[i].table_id == table_id)
+		if(pages[i].table_id == table_id){
+			while(pages[i].pin_count);
 			remove_buffer_element(pages+i);
+		}
 	}
-	if(pages[tailidx].table_id == table_id)
+	if(pages[tailidx].table_id == table_id){
+		while(pages[tailidx].pin_count);
 		remove_buffer_element(pages+tailidx);
+	}
 	return 0;
 }
 
 int shutdown_buffer(void){
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
+		while(pages[i].pin_count);
 		remove_buffer_element(pages+i);
 	}
+	while(pages[tailidx].pin_count);
 	remove_buffer_element(pages+tailidx);
 	free(pages);
 	return 0;
