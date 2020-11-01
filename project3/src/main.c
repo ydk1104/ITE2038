@@ -9,32 +9,32 @@
 	#define printf(x, ...) (void*)(x)
 #endif
 
-void insert_test(int N){
+void insert_test(int N, int table_id){
 	N /= 10;
 	char s[11] = "0123456789";
 	char val[120];
 	int64_t offset = 0;
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_insert(2, key, s+(i%10));
+		int error = db_insert(table_id, key, s+(i%10));
 		printf("insert test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}// */
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(2, key, val);
+		int error = db_find(table_id, key, val);
 		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_delete(2, key);
+		int error = db_delete(table_id, key);
 		printf("delete test : %ld\n", key);
 		if(error) printf("FAILED"), exit(-1);
 	}
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(2, key, val);
+		int error = db_find(table_id, key, val);
 		printf("not find test : %ld\n", key);
 		if(!error) printf("FAILED"), exit(-1);
 	} // */
@@ -107,7 +107,10 @@ void test(TEST test){
 					head->header.numOfPages);
 #endif
 	int N = 1e6;
-	insert_test(N);
+	insert_test(N, 1);
+	insert_test(N, 2);
+	close_table(1);
+	insert_test(N, 1);
 }
 
 int my_main(){

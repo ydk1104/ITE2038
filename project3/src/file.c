@@ -82,7 +82,8 @@ void remove_buffer_element(page_t* page){
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
 	}
-	memset(page, 0, sizeof(page_t));
+	memset(page, -1, sizeof(page_t));
+	page->pin_count = 0;
 	return;
 }
 
@@ -151,9 +152,11 @@ pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 		exit(-1);
 	}
 	else{
-		// increment size
-		push_buffer_element(pages+size, table_id, pagenum, is_read);
-		return size-1;
+		// find not-used index
+		int i=0;
+		while(pages[i].nextidx != -1) i++;
+		push_buffer_element(pages+i, table_id, pagenum, is_read);
+		return i;
 	}
 }
 
