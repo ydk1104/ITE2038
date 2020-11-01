@@ -47,6 +47,7 @@ int shutdown_buffer(void){
 	while(pages[tailidx].pin_count);
 	remove_buffer_element(pages+tailidx);
 	free(pages);
+	table_count = 0;
 	return 0;
 }
 
