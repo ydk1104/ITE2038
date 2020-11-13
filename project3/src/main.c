@@ -26,7 +26,7 @@ void insert_test(int N, int table_id){
 		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
-	for(int i=0; i<N; i++){
+/*	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
 		int error = db_delete(table_id, key);
 		printf("delete test : %ld\n", key);
@@ -109,8 +109,7 @@ void test(TEST test){
 	int N = 1e6;
 	insert_test(N, 1);
 	insert_test(N, 2);
-	close_table(1);
-	insert_test(N, 1);
+	close_table(2);
 }
 
 int my_main(){

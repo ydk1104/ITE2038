@@ -24,6 +24,7 @@ int init_buffer(int buf_num){
 }
 
 int close_buffer(int table_id){
+	if(size == 0) return 0;
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
 		if(pages[i].table_id == table_id){
@@ -39,6 +40,7 @@ int close_buffer(int table_id){
 }
 
 int shutdown_buffer(void){
+	if(size == 0) return 0;
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
 		while(pages[i].pin_count);
