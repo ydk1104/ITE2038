@@ -40,7 +40,6 @@ lock_acquire(int table_id, int64_t key)
 	l->head = head;
 	if(l != head->next)
 		l->c.wait(lock, [&l, &head]{return l == head->next;});
-	lock.unlock();
 	return l;
 }
 
@@ -60,6 +59,5 @@ lock_release(lock_t* lock_obj)
 		head->tail = head;
 	}
 	free(lock_obj);
-	lock.unlock();
 	return 0;
 }
