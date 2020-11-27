@@ -73,7 +73,7 @@ int close_table(int table_id){
 
 int shutdown_db(void){
 	for(int i=0; i<open_table_cnt; i++){
-		delete pathname_to_table_id[i];
+		delete[] pathname_to_table_id[i];
 		pathname_to_table_id[i] = NULL;
 	}
 	open_table_cnt = 0;

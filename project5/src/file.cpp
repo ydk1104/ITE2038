@@ -41,7 +41,7 @@ int close_buffer(int table_id){
 }
 
 int shutdown_buffer(void){
-	if(size == 0) return 0;
+	if(size == 0) goto end;
 	for(int i=headidx, next; i!=tailidx; i=next){
 		next = pages[i].nextidx;
 		while(pages[i].pin_count);
@@ -49,6 +49,7 @@ int shutdown_buffer(void){
 	}
 	while(pages[tailidx].pin_count);
 	remove_buffer_element(pages+tailidx);
+end:
 	free(pages);
 	table_count = 0;
 	return 0;
