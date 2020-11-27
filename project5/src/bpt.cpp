@@ -77,136 +77,10 @@ bool verbose_output = false;
 
 // FUNCTION DEFINITIONS.
 
-// OUTPUT AND UTILITIES
-
-/* Copyright and license notice to user at startup. 
- */
-void license_notice( void ) {
-    printf("bpt version %s -- Copyright (C) 2010  Amittai Aviram "
-            "http://www.amittai.com\n", Version);
-    printf("This program comes with ABSOLUTELY NO WARRANTY; for details "
-            "type `show w'.\n"
-            "This is free software, and you are welcome to redistribute it\n"
-            "under certain conditions; type `show c' for details.\n\n");
-}
-
-
-/* Routine to print portion of GPL license to stdout.
- */
-void print_license( int license_part ) {
-    int start, end, line;
-    FILE * fp;
-    char buffer[0x100];
-
-    switch(license_part) {
-    case LICENSE_WARRANTEE:
-        start = LICENSE_WARRANTEE_START;
-        end = LICENSE_WARRANTEE_END;
-        break;
-    case LICENSE_CONDITIONS:
-        start = LICENSE_CONDITIONS_START;
-        end = LICENSE_CONDITIONS_END;
-        break;
-    default:
-        return;
-    }
-
-    fp = fopen(LICENSE_FILE, "r");
-    if (fp == NULL) {
-        perror("print_license: fopen");
-        exit(EXIT_FAILURE);
-    }
-    for (line = 0; line < start; line++)
-        fgets(buffer, sizeof(buffer), fp);
-    for ( ; line < end; line++) {
-        fgets(buffer, sizeof(buffer), fp);
-        printf("%s", buffer);
-    }
-    fclose(fp);
-}
-
-
-/* First message to the user.
- */
-void usage_1( void ) {
-    printf("B+ Tree of Order %d.\n", internal_order);
-    printf("Following Silberschatz, Korth, Sidarshan, Database Concepts, "
-           "5th ed.\n\n"
-           "To build a B+ tree of a different order, start again and enter "
-           "the order\n"
-           "as an integer argument:  bpt <order>  ");
-    printf("(%d <= order <= %d).\n", MIN_ORDER, MAX_ORDER);
-    printf("To start with input from a file of newline-delimited integers, \n"
-           "start again and enter the order followed by the filename:\n"
-           "bpt <order> <inputfile> .\n");
-}
-
-
-/* Second message to the user.
- */
-void usage_2( void ) {
-    printf("Enter any of the following commands after the prompt > :\n"
-    "\ti <k>  -- Insert <k> (an integer) as both key and value).\n"
-    "\tf <k>  -- Find the value under key <k>.\n"
-    "\tp <k> -- Print the path from the root to key k and its associated "
-           "value.\n"
-    "\tr <k1> <k2> -- Print the keys and values found in the range "
-            "[<k1>, <k2>\n"
-    "\td <k>  -- Delete key <k> and its associated value.\n"
-    "\tx -- Destroy the whole tree.  Start again with an empty tree of the "
-           "same order.\n"
-    "\tt -- Print the B+ tree.\n"
-    "\tl -- Print the keys of the leaves (bottom row of the tree).\n"
-    "\tv -- Toggle output of pointer addresses (\"verbose\") in tree and "
-           "leaves.\n"
-    "\tq -- Quit. (Or use Ctl-D.)\n"
-    "\t? -- Print this help message.\n");
-}
-
-
-/* Brief usage note.
- */
-void usage_3( void ) {
-    printf("Usage: ./bpt [<order>]\n");
-    printf("\twhere %d <= order <= %d .\n", MIN_ORDER, MAX_ORDER);
-}
-
-/* Finds keys and their pointers, if present, in the range specified
- * by key_start and key_end, inclusive.  Places these in the arrays
- * returned_keys and returned_pointers, and returns the number of
- * entries found.
- */
-int find_range( int table_id, pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
-        int64_t returned_keys[], void * returned_pointers[]) {
-    int i, num_found;
-    num_found = 0;
-    node * n = find_leaf( table_id, root, key_start );
-    if (n == NULL) return 0;
-    for (i = 0; i < n->num_keys && n->keys[i] < key_start; i++) ;
-    if (i == n->num_keys) return 0;
-    while (n != NULL) {
-        for ( ; i < n->num_keys && n->keys[i] <= key_end; i++) {
-            returned_keys[num_found] = n->keys[i];
-            returned_pointers[num_found] = n->pointers[i];
-            num_found++;
-        }
-        n = (node*)n->pointers[leaf_order - 1];
-        i = 0;
-    }
-    return num_found;
-}
-
 void free_node(node** node_ptr){
 	node* node = *node_ptr;
 	--node->buffer_ptr->pin_count;
-	if(node->is_leaf){
-		for(int i=0; i<node->num_keys; i++){
-			free(node->pointers[i]);
-		}
-	}
-	free(node->keys);
-	free(node->pages);
-	free(node);
+	delete *node_ptr;
 	*node_ptr = NULL;
 }
 
@@ -248,8 +122,7 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val) {
 		return -1;
 	}
     else{
-		record* ret = (record *)c->pointers[i];
-		if(ret_val) strncpy(ret_val, ret->value, 120);
+		if(ret_val) strncpy(ret_val, c->pointers[i].value, 120);
 		free_node(&c);
         return i;
 	}
@@ -268,50 +141,21 @@ int cut( int length ) {
 
 // INSERTION
 
-/* Creates a new record to hold the value
- * to which a key refers.
- */
-record * make_record(const char* value) {
-    record * new_record = (record *)malloc(sizeof(record));
-    if (new_record == NULL) {
-        perror("Record creation.");
-        exit(EXIT_FAILURE);
-    }
-    else {
-        strncpy(new_record->value, value, 119);
-		new_record->value[119] = 0;
-    }
-    return new_record;
-}
-
-
 /* Creates a new general node, which can be adapted
  * to serve as either a leaf or an internal node.
  */
 node * make_node( int table_id ) {
-	node * new_node;
-    new_node = (node*)malloc(sizeof(node));
-    if (new_node == NULL) {
+	node * new_node = new node(file_alloc_page(table_id));
+   
+	if (new_node == NULL) {
         perror("Node creation.");
         exit(EXIT_FAILURE);
     }
-    new_node->keys = (int64_t*)malloc( (internal_order - 1) * sizeof(int64_t) );
-    if (new_node->keys == NULL) {
-        perror("New node keys array.");
-        exit(EXIT_FAILURE);
-    }
-    new_node->pointers = (void**)malloc( internal_order * sizeof(void *) );
-    if (new_node->pointers == NULL) {
-        perror("New node pointers array.");
-        exit(EXIT_FAILURE);
-    }
-    new_node->is_leaf = false;
+    
+	new_node->is_leaf = false;
     new_node->num_keys = 0;
     new_node->parent = 0;
 
-	new_node->buffer_ptr = file_alloc_page(table_id);
-	new_node->pagenum = new_node->buffer_ptr->pagenum;
-   	new_node->table_id = table_id;
 	return new_node;
 }
 
@@ -320,10 +164,6 @@ node * make_node( int table_id ) {
  */
 node * make_leaf( int table_id ) {
     node * leaf = make_node(table_id);
- 	free(leaf->keys);
-	leaf->keys = (int64_t*)malloc( (leaf_order - 1) * sizeof(int64_t) );
-	free(leaf->pointers);
-	leaf->pointers = (void**)malloc( leaf_order * sizeof(void *) );
 	leaf->is_leaf = true;
     return leaf;
 }
@@ -346,7 +186,7 @@ int get_left_index(node * parent, pagenum_t pagenum) {
  * key into a leaf.
  * Returns the altered leaf.
  */
-node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
+node * insert_into_leaf( node * leaf, int64_t key, const char * value ) {
 
     int i, insertion_point;
 
@@ -359,7 +199,7 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
         leaf->pointers[i] = leaf->pointers[i - 1];
     }
     leaf->keys[insertion_point] = key;
-    leaf->pointers[insertion_point] = pointer;
+    leaf->pointers[insertion_point] = value;
     leaf->num_keys++;
 	node_to_page(&leaf, true);
 	return leaf;
@@ -371,11 +211,11 @@ node * insert_into_leaf( node * leaf, int64_t key, record * pointer ) {
  * the tree's order, causing the leaf to be split
  * in half.
  */
-pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, record * pointer) {
+pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t key, const char * value) {
 
     node * new_leaf;
     int64_t * temp_keys;
-    void ** temp_pointers;
+    record * temp_pointers;
     int insertion_index, split, i, j;
 	int64_t new_key;
 
@@ -387,7 +227,7 @@ pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t 
         exit(EXIT_FAILURE);
     }
 
-    temp_pointers = (void**)malloc( leaf_order * sizeof(void *) );
+    temp_pointers = (record*)malloc( leaf_order * sizeof(record) );
     if (temp_pointers == NULL) {
         perror("Temporary pointers array.");
         exit(EXIT_FAILURE);
@@ -404,7 +244,7 @@ pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t 
     }
 
     temp_keys[insertion_index] = key;
-    temp_pointers[insertion_index] = pointer;
+    temp_pointers[insertion_index] = value;
 
     leaf->num_keys = 0;
 
@@ -429,9 +269,9 @@ pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t 
     leaf->pages[leaf_order - 1] = new_leaf->pagenum;
 
     for (i = leaf->num_keys; i < leaf_order - 1; i++)
-        leaf->pointers[i] = NULL;
+        leaf->pointers[i] = "";
     for (i = new_leaf->num_keys; i < leaf_order - 1; i++)
-        new_leaf->pointers[i] = NULL;
+        new_leaf->pointers[i] = "";
 
     new_leaf->parent = leaf->parent;
     new_key = new_leaf->keys[0];
@@ -618,12 +458,12 @@ pagenum_t insert_into_new_root(node * left, int64_t key, node * right) {
 /* First insertion:
  * start a new tree.
  */
-pagenum_t start_new_tree(int table_id, int64_t key, record * pointer) {
+pagenum_t start_new_tree(int table_id, int64_t key, const char * value) {
 
     node * root = make_leaf(table_id);
     root->keys[0] = key;
-    root->pointers[0] = pointer;
-    root->pointers[leaf_order - 1] = NULL;
+    root->pointers[0] = value;
+    root->pages[leaf_order - 1] = 0;
     root->parent = 0;
     root->num_keys++;
 	pagenum_t ret = root->pagenum;
@@ -640,9 +480,8 @@ pagenum_t start_new_tree(int table_id, int64_t key, record * pointer) {
  * properties.
  */
 pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value ) {
-
-    record * pointer;
-    node * leaf;
+    
+	node * leaf;
 
     /* The current implementation ignores
      * duplicates.
@@ -651,18 +490,12 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
     if (root && find(table_id, root, key, NULL) != -1)
         return -1;
 
-    /* Create a new record for the
-     * value.
-     */
-    pointer = make_record(value);
-
-
     /* Case: the tree does not exist yet.
      * Start a new tree.
      */
 
     if (root == 0) 
-        return start_new_tree(table_id, key, pointer);
+        return start_new_tree(table_id, key, value);
 
 
     /* Case: the tree already exists.
@@ -675,8 +508,7 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
      */
 	
     if (leaf->num_keys < leaf_order - 1) {
-        leaf = insert_into_leaf(leaf, key, pointer);
-		free(leaf);
+        leaf = insert_into_leaf(leaf, key, value);
         return root;
     }
 
@@ -684,7 +516,7 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
     /* Case:  leaf must be split.
      */
 
-    return insert_into_leaf_after_splitting(root, leaf, key, pointer);
+    return insert_into_leaf_after_splitting(root, leaf, key, value);
 }
 
 
@@ -739,14 +571,18 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     // First determine number of pointers.
     num_pointers = n->is_leaf ? n->num_keys : n->num_keys + 1;
     i = 0;
-	if(n->is_leaf) while(n->pointers[i] != pointer)
-		i++;
-	else while (n->pages[i] != pointer->pagenum)
-        i++;
-    for (++i; i < num_pointers; i++)
-        n->pointers[i - 1] = n->pointers[i];
-
-
+	if(n->is_leaf){
+		while(i != (pagenum_t)pointer) i++;
+		for(++i; i<num_pointers; i++){
+			n->pointers[i-1] = n->pointers[i];
+		}
+	}
+	else{
+		while(n->pages[i] != pointer->pagenum) i++;
+		for(++i; i<num_pointers;i ++)
+			n->pages[i-1] = n->pages[i];
+	}
+	
     // One key fewer.
     n->num_keys--;
 
@@ -754,10 +590,10 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     // A leaf uses the last pointer to point to the next leaf.
     if (n->is_leaf)
         for (i = n->num_keys; i < leaf_order - 1; i++)
-            n->pointers[i] = NULL;
+            n->pointers[i] = "";
     else
         for (i = n->num_keys + 1; i < internal_order; i++)
-            n->pointers[i] = NULL;
+            n->pages[i] = 0;
 //	node_to_page(&n, false);
     return n;
 }
@@ -886,7 +722,7 @@ pagenum_t coalesce_nodes(pagenum_t root, node * n, node * neighbor, int neighbor
             neighbor->num_keys++;
         }
 		n->num_keys = 0;
-        neighbor->pointers[leaf_order - 1] = n->pointers[leaf_order - 1];
+        neighbor->pages[leaf_order - 1] = n->pages[leaf_order - 1];
     }
 	
 	node_to_page(&neighbor,true);
@@ -1074,9 +910,7 @@ pagenum_t delete_main(int table_id, pagenum_t root, int64_t key) {
     key_record_idx = find(table_id, root, key, NULL);
     key_leaf = find_leaf(table_id, root, key);
     if (key_record_idx != -1 && key_leaf != NULL) {
-		record * key_record = (record*)key_leaf->pointers[key_record_idx];
-        root = delete_entry(root, key_leaf, key, key_record); 
-		free(key_record);
+        root = delete_entry(root, key_leaf, key, (void*)key_record_idx); 
     	return root;
     }
 	return -1;

@@ -1,3 +1,4 @@
+#include<bpt.h>
 #include<db.h>
 #include<file.h>
 
@@ -84,8 +85,9 @@ void remove_buffer_element(page_t* page){
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
 	}
-	memset(page, -1, sizeof(page_t));
-	page->pin_count = 0;
+	memset(page, 0, sizeof(page_t));
+	page->table_id = page->pagenum = 
+	page->nextidx = page->previdx = -1;
 	return;
 }
 
@@ -172,95 +174,37 @@ void node_to_page(struct node** nodeptr, bool doFree){
 //	if(page->pin_count != 0)
 //		printf("node_to_page : %ld %d\n", node->pagenum, page->pin_count);
 
-	page->page.parentPageNum = (pagenum_t)node->parent;
-	page->page.isLeaf = node->is_leaf;
-	page->page.numOfKeys = node->num_keys;
-	int leaf_order = DEFAULT_LEAF_ORDER, internal_order = DEFAULT_INTERNAL_ORDER;
-	if(node -> is_leaf){
-		page->page.pageNum = node->pages[leaf_order-1];
-		for(int i=0; i<node->num_keys; i++){
-			page->leaf[i].key = node->keys[i];
-			strncpy(page->leaf[i].value, ((record*)node->pointers[i])->value, 120);
-		}
-	}
-	else{
-		page->page.pageNum = node->pages[0];
-		for(int i=0; i<node->num_keys; i++){
-			page->internal[i].key = node->keys[i];
-			page->internal[i].pageNum = node->pages[i+1];
-		}
-	}
 	page->is_dirty = true;
 	if(doFree){
-		free(node->keys);
-		if(node->is_leaf){
-			for(int i=0; i<node->num_keys; i++){
-				free(node->pointers[i]);
-			}	
-		}
-		free(node->pages);
-		free(*nodeptr);
+		delete *nodeptr;
 		*nodeptr = NULL;
 	}
 }
 
 void page_to_node(int table_id, pagenum_t pagenum, struct node ** nodeptr){
-	int leaf_order = DEFAULT_LEAF_ORDER,
-		internal_order = DEFAULT_INTERNAL_ORDER;
-	
 	struct node * node = *nodeptr;
 	if(node != NULL){
-		if(node->is_leaf){
-			for(int i=0; i<node->num_keys; i++){
-				free(node->pointers[i]);
-			}
-		}
 		--node->buffer_ptr->pin_count;
 //		if(node->buffer_ptr->pin_count < 0){
 //			printf("page_to_node, %ld %d\n", node->buffer_ptr->pagenum, node->buffer_ptr->pin_count);
 //		}
-		free(node->keys);
-		free(node->pages);
-		free(*nodeptr);
+		delete *nodeptr;
 		*nodeptr = NULL;
 	}
 	if(pagenum == 0){
 		return;
 	}
-	*nodeptr = node = (struct node*)malloc(sizeof(struct node));
 
 	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, pagenum, true);	
+
 	page_t* page = pages+pageidx;
+
+	*nodeptr = new struct node(page);
 //	if(node->pagenum == pagenum) return; // correct?
 	++page->pin_count;
 //	if(page->pin_count != 1)
 //		printf("page_to_node : %ld %d\n", pagenum, page->pin_count);
 
-	node->parent = page->page.parentPageNum;
-	node->is_leaf = page->page.isLeaf;
-	node->num_keys = page->page.numOfKeys;
-	node->pagenum = pagenum;
-	node->table_id = table_id;
-	node->buffer_ptr = page;
-	if(node -> is_leaf){
-		node->keys = (int64_t*)malloc((leaf_order - 1) * sizeof(int64_t));
-		node->pointers = (void**)malloc(leaf_order * sizeof(void*));
-		node->pages[leaf_order-1] = page->page.pageNum;
-		for(int i=0; i<node->num_keys; i++){
-			node->keys[i] = page->leaf[i].key;
-			node->pointers[i] = malloc(sizeof(record));
-			strncpy(((record*)node->pointers[i])->value, page->leaf[i].value, 120);
-		}
-	}
-	else{
-		node->keys = (int64_t*)malloc((internal_order - 1) * sizeof(int64_t));
-		node->pages = (pagenum_t*)malloc(internal_order * sizeof(pagenum_t*));
-		node->pages[0] = page->page.pageNum;
-		for(int i=0; i<node->num_keys; i++){
-			node->keys[i] = page->internal[i].key;
-			node->pages[i+1] = page->internal[i].pageNum;
-		}
-	}
 	return;
 }
 
@@ -275,7 +219,7 @@ int file_open(char* pathname){
 		}
 		table_id_to_fd[table_count] = fd;
 		page_t *head = get_header_ptr(table_count, false);
-		head->header.numOfPages = 1;
+		head->data.header.numOfPages = 1;
 		--head->pin_count;
 	}
 	else table_id_to_fd[table_count] = fd;
@@ -287,14 +231,14 @@ page_t* file_alloc_page(int table_id){
 	page_t* head = get_header_ptr(table_id, true);
 	page_t* page;
 	--head->pin_count;// - header is already pinned, but pin_count == 2
-	int freePageNum = head->header.freePageNum;
+	int freePageNum = head->data.header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
 		page = pages+get_pageidx_by_pagenum(table_id, freePageNum, true);
-		head->header.freePageNum = page->free.nextFreePage;
+		head->data.header.freePageNum = page->data.free.nextFreePage;
 	}
 	else{
-		page = pages+get_pageidx_by_pagenum(table_id, freePageNum = head->header.numOfPages++, false);
+		page = pages+get_pageidx_by_pagenum(table_id, freePageNum = head->data.header.numOfPages++, false);
 	}
 	++page->pin_count;
 	return page;
@@ -302,21 +246,17 @@ page_t* file_alloc_page(int table_id){
 // Free an on-disk page to the free page list
 void file_free_page(int table_id, pagenum_t pagenum){
 	const int fd = table_id_to_fd[table_id];
-	page_t clean = {0, }, *head = get_header_ptr(table_id, true);
+	page_t *head = get_header_ptr(table_id, true);
 	--head->pin_count; //- header is already pinned., but pin_count == 2
 
-	clean.free.nextFreePage = head->header.freePageNum;
-	clean.pagenum = pagenum;
-	clean.table_id = table_id;
-	head->header.freePageNum = pagenum;
+	page_t* clean = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
+	memset(clean->byte, 0, sizeof(clean->byte));
+	clean->data.free.nextFreePage = head->data.header.freePageNum;
+	clean->pagenum = pagenum;
+	clean->table_id = table_id;
+	head->data.header.freePageNum = pagenum;
 	head->is_dirty = true;
-	page_t* temp = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
-	clean.pin_count = temp->pin_count;
-	clean.nextidx = temp->nextidx;
-	clean.previdx = temp->previdx;
-	*temp = clean;
-	temp->is_dirty = true;
-
+	clean->is_dirty = true;
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){

@@ -2,7 +2,7 @@
 #define __file__
 
 // file.h
-#include<bpt.h>
+#include<type.h>
 #include<fcntl.h>
 #include<stdint.h>
 #include<sys/types.h>
@@ -10,7 +10,8 @@
 #include<stdbool.h>
 #include<unistd.h>
 typedef uint64_t pagenum_t;
-typedef struct page_t{
+
+struct page_t{
 // in-memory page structure
 	union{
 		char byte[4096];
@@ -39,24 +40,26 @@ typedef struct page_t{
 						}internal[248];
 						struct{
 							int64_t key;
-							char value[120];
+							record value;
+//							char value[120];
 						}leaf[31];
 					};
-				};
+				}pageData;
 			};
-			int table_id;
-			pagenum_t pagenum;
-			int is_dirty;
-			int pin_count;
-			int nextidx, previdx;
-		};
+		}data;
 	};
-}page_t;
+	int table_id;
+	pagenum_t pagenum;
+	int is_dirty;
+	int pin_count;
+	int nextidx, previdx;
+	page_t(){}
+//	page_t(const page_t& x) = delete;
+//	void operator =(const page_t& x) = delete;
+};
 
 #define PAGE_SIZE 4096
 #define TABLE_SIZE 10
-
-typedef struct node node;
 
 int init_buffer(int buf_num);
 int close_buffer(int table_id);

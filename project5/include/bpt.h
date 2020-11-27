@@ -3,12 +3,12 @@
 
 // Uncomment the line below if you are compiling on Windows.
 // #define WINDOWS
+#include <type.h>
 #include <file.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <string.h>
 #ifdef WINDOWS
 #define bool char
 #define false 0
@@ -47,9 +47,7 @@
  * to change the type and content
  * of the value field.
  */
-typedef struct record {
-	char value[120];
-} record;
+
 
 /* Type representing a node in the B+ tree.
  * This type is general enough to serve for both
@@ -81,20 +79,70 @@ typedef struct record {
  */
 
 typedef uint64_t pagenum_t;
-typedef struct node {
+struct node {
 union{
-	void ** pointers;
-	pagenum_t *pages;
+//	void ** pointers;
+//	pagenum_t *pages;
+
+	class{
+	public:
+		page_t* buffer_ptr;
+		record& operator [](int i){
+			if(!buffer_ptr->data.pageData.page.isLeaf){
+				printf("error");
+			}
+			if(i == DEFAULT_LEAF_ORDER - 1){
+				printf("chage to pages\n");
+			}
+			return buffer_ptr->data.pageData.leaf[i].value;
+		}
+	}pointers;
+
+	class{
+	public:
+		page_t* buffer_ptr;
+		pagenum_t& operator [](int i){
+			auto& temp = buffer_ptr->data.pageData;
+			if(temp.page.isLeaf){
+				if(i == DEFAULT_LEAF_ORDER - 1) return buffer_ptr->data.pageData.page.pageNum;
+				printf("error");
+			}
+			if(i==0) return temp.page.pageNum;
+			return temp.internal[i-1].pageNum;
+		}
+	}pages;
 };
-    int64_t * keys;
-    pagenum_t parent;
-    bool is_leaf;
-    int num_keys;
+//    int64_t * keys;
+	class{
+	public:
+		page_t* buffer_ptr;
+		int64_t& operator [](int i){
+			if(buffer_ptr->data.pageData.page.isLeaf) return buffer_ptr->data.pageData.leaf[i].key;
+			return buffer_ptr->data.pageData.internal[i].key;
+		}
+	}keys;
+    pagenum_t& parent;
+    uint32_t& is_leaf;
+    uint32_t& num_keys;
 
 	int table_id;
 	pagenum_t pagenum; // Used for disk-io.
 	struct page_t* buffer_ptr; // Used for --buffet_ptr->is_pinned.
-} node;
+	node(page_t* page_ptr):
+		node(page_ptr, page_ptr->pagenum, page_ptr->table_id,
+			 page_ptr->data.pageData.page.parentPageNum,
+			 page_ptr->data.pageData.page.isLeaf,
+			 page_ptr->data.pageData.page.numOfKeys){}
+	node(page_t* buffer_ptr, pagenum_t pagenum, int table_id, pagenum_t& parent, uint32_t& is_leaf, uint32_t& num_keys):
+			buffer_ptr(buffer_ptr),
+			pagenum(pagenum),
+			table_id(table_id),
+			parent(parent),
+			is_leaf(is_leaf),
+			num_keys(num_keys){
+				pointers.buffer_ptr = pages.buffer_ptr = keys.buffer_ptr = buffer_ptr;
+			}
+};
 
 // GLOBALS.
 
@@ -120,15 +168,6 @@ extern bool verbose_output;
 
 // FUNCTION PROTOTYPES.
 
-// Output and utility.
-
-void license_notice( void );
-void print_license( int licence_part );
-void usage_1( void );
-void usage_2( void );
-void usage_3( void );
-int find_range( int table_id, pagenum_t root, int64_t key_start, int64_t key_end, bool verbose,
-        int64_t returned_keys[], void * returned_pointers[]); 
 node * find_leaf( int table_id, pagenum_t root, int64_t key);
 int find( int table_id, pagenum_t root, int64_t key, char* ret_val);
 int cut( int length );
