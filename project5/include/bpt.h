@@ -3,6 +3,7 @@
 
 // Uncomment the line below if you are compiling on Windows.
 // #define WINDOWS
+#include <buffer.h>
 #include <type.h>
 #include <file.h>
 #include <stdio.h>
@@ -160,6 +161,15 @@ extern bool verbose_output;
 
 
 // FUNCTION PROTOTYPES.
+
+// layer.
+int init_bpt(int buf_num);
+int close_buffer(int table_id);
+int shutdown_buffer(void);
+int file_open(char* pathname);
+page_t* file_alloc_page(int table_id);
+void file_free_page(int table_id, pagenum_t pagenum);
+page_t* get_header_ptr(int table_id, bool is_read);
 
 node * find_leaf( int table_id, pagenum_t root, int64_t key);
 int find( int table_id, pagenum_t root, int64_t key, char* ret_val);

@@ -4,6 +4,8 @@
 
 struct page_t;
 struct node;
+class bufferManager;
+class fileManager;
 
 struct record{
 	char value[120];

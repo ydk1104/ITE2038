@@ -75,6 +75,37 @@ int internal_order = DEFAULT_INTERNAL_ORDER, leaf_order = DEFAULT_LEAF_ORDER;
  */
 bool verbose_output = false;
 
+bufferManager *bm;
+
+int init_bpt(int buf_num){
+	bm = new bufferManager(buf_num);
+	return 0;
+}
+
+int close_buffer(int table_id){
+	return bm->close_buffer(table_id);
+}
+
+int shutdown_buffer(void){
+	return bm->shutdown_buffer();
+}
+
+int file_open(char* pathname){
+	return bm->file_open(pathname);
+}
+
+page_t* file_alloc_page(int table_id){
+	return bm->file_alloc_page(table_id);
+}
+
+void file_free_page(int table_id, pagenum_t pagenum){
+	return bm->file_free_page(table_id, pagenum);
+}
+
+page_t* get_header_ptr(int table_id, bool is_read){
+	return bm->get_header_ptr(table_id, is_read);
+}
+
 // FUNCTION DEFINITIONS.
 
 void free_node(node** node_ptr){
@@ -82,6 +113,13 @@ void free_node(node** node_ptr){
 	--node->buffer_ptr->pin_count;
 	delete *node_ptr;
 	*node_ptr = NULL;
+}
+
+void node_to_page(node** nptr, bool doFree){
+	bm->node_to_page(nptr, doFree);
+}
+void page_to_node(int table_id, pagenum_t pagenum, node** nptr){
+	bm->page_to_node(table_id, pagenum, nptr);
 }
 
 /* Traces the path from the root to a leaf, searching

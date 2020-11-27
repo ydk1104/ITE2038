@@ -14,7 +14,7 @@ void insert_test(int N, int table_id){
 	char s[11] = "0123456789";
 	char val[120];
 	int64_t offset = 0;
-	for(int i=0; i<N; i++){
+/*	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
 		int error = db_insert(table_id, key, s+(i%10));
 		printf("insert test : %ld\n", key);
@@ -26,7 +26,7 @@ void insert_test(int N, int table_id){
 		printf("find test : %ld %s\n", key, val);
 		if(error) printf("FAILED"), exit(-1);
 	} // */
-	for(int i=0; i<N; i++){
+/*	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
 		int error = db_delete(table_id, key);
 		printf("delete test : %ld\n", key);

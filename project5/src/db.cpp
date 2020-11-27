@@ -6,7 +6,7 @@ char* pathname_to_table_id[TABLE_SIZE];
 int open_table_cnt;
 
 int init_db (int buf_num){
-	return init_buffer(buf_num);
+	return init_bpt(buf_num);
 }
 //in db, table_id is 0 base, but output is 1 base
 //so return table_id+1
