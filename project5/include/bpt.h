@@ -88,12 +88,6 @@ union{
 	public:
 		page_t* buffer_ptr;
 		record& operator [](int i){
-			if(!buffer_ptr->data.pageData.page.isLeaf){
-				printf("error");
-			}
-			if(i == DEFAULT_LEAF_ORDER - 1){
-				printf("chage to pages\n");
-			}
 			return buffer_ptr->data.pageData.leaf[i].value;
 		}
 	}pointers;
@@ -105,7 +99,6 @@ union{
 			auto& temp = buffer_ptr->data.pageData;
 			if(temp.page.isLeaf){
 				if(i == DEFAULT_LEAF_ORDER - 1) return buffer_ptr->data.pageData.page.pageNum;
-				printf("error");
 			}
 			if(i==0) return temp.page.pageNum;
 			return temp.internal[i-1].pageNum;

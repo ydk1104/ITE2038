@@ -12,7 +12,8 @@ struct record{
 		for(int i=0; i<120; i++) value[i] = x.value[i];
 	}
 	void operator =(const char* x){
-		strncpy(value, x, 119);
+		if(x == NULL) memset(value, 0, 119);
+		else strncpy(value, x, 119);
 		value[119] = 0;
 	}
 };
