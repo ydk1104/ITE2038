@@ -20,7 +20,7 @@ int fileManager::file_open(char* pathname){
 		table_id_to_fd[table_count] = fd;
 		page_t *head = get_header_ptr(table_count, false);
 		head->data.header.numOfPages = 1;
-		--head->pin_count;
+		head->unlock();
 	}
 	else table_id_to_fd[table_count] = fd;
 	return table_count++;
@@ -30,7 +30,7 @@ page_t* fileManager::file_alloc_page(int table_id){
 	const int fd = table_id_to_fd[table_id];
 	page_t* head = get_header_ptr(table_id, true);
 	page_t* page;
-	--head->pin_count;// - header is already pinned, but pin_count == 2
+//	--head->pin_count;// - header is already pinned, but pin_count == 2
 	int freePageNum = head->data.header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
@@ -40,14 +40,15 @@ page_t* fileManager::file_alloc_page(int table_id){
 	else{
 		page = pages+get_pageidx_by_pagenum(table_id, freePageNum = head->data.header.numOfPages++, false);
 	}
-	++page->pin_count;
+	head->is_dirty = true;
+	head->unlock();
 	return page;
 }
 // Free an on-disk page to the free page list
 void fileManager::file_free_page(int table_id, pagenum_t pagenum){
 	const int fd = table_id_to_fd[table_id];
 	page_t *head = get_header_ptr(table_id, true);
-	--head->pin_count; //- header is already pinned., but pin_count == 2
+//	--head->pin_count; //- header is already pinned., but pin_count == 2
 
 	page_t* clean = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
 	memset(clean->byte, 0, sizeof(clean->byte));
@@ -57,6 +58,7 @@ void fileManager::file_free_page(int table_id, pagenum_t pagenum){
 	head->data.header.freePageNum = pagenum;
 	head->is_dirty = true;
 	clean->is_dirty = true;
+	head->unlock();
 }
 // Read an on-disk page into the in-memory page structure(dest)
 void fileManager::file_read_page(pagenum_t pagenum, page_t* dest){

@@ -53,14 +53,10 @@ struct page_t{
 	int table_id;
 	pagenum_t pagenum;
 	int is_dirty;
-	int pin_count;
 	std::mutex page_latch;
 	int nextidx, previdx;
 	void lock(){page_latch.lock();}
 	void unlock(){page_latch.unlock();}
-	bool is_active(void){
-		return pin_count>0;
-	}
 	page_t(){
 		memset(this, 0, sizeof(page_t));
 		previdx = nextidx = pagenum = -1;

@@ -113,7 +113,6 @@ page_t* get_header_ptr(int table_id, bool is_read){
 
 void free_node(node** node_ptr){
 	node* node = *node_ptr;
-	--node->buffer_ptr->pin_count;
 	node->buffer_ptr->unlock();
 	delete *node_ptr;
 	*node_ptr = NULL;

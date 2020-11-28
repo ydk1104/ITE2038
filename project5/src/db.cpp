@@ -53,7 +53,6 @@ int db_insert (int table_id, int64_t key, char * value){
 	}
 	//TODO : make get_root_page_num
 	header->unlock();
-	--header->pin_count;
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base
@@ -64,7 +63,6 @@ int db_find (int table_id, int64_t key, char * ret_val, int trx_id){
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
 	int idx = find(table_id, rootPageNum, key, ret_val, trx_id);
-	--header->pin_count;
 	if(idx == -1) return 1;
 	return 0;
 }
@@ -76,7 +74,6 @@ int db_update (int table_id, int64_t key, char * values, int trx_id){
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
 	int idx = update(table_id, rootPageNum, key, values, trx_id);
-	--header->pin_count;
 	if(idx == -1) return 1;
 	return 0;
 }
@@ -95,7 +92,6 @@ int db_delete (int table_id, int64_t key){
 		header->is_dirty = true;
 	}
 	header->unlock();
-	--header->pin_count;
 	return 0;
 }
 int close_table(int table_id){
