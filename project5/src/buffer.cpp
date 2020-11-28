@@ -1,5 +1,7 @@
 #include<buffer.h>
 
+//private
+
 void bufferManager::node_to_page(node** nptr, bool doFree){
 	if(*nptr == NULL) return;
 	node* n = *nptr;
@@ -30,20 +32,22 @@ void bufferManager::page_to_node(int table_id, pagenum_t pagenum, node** nptr){
 }
 
 
-void bufferManager::push(page_t* page, int table_id, pagenum_t pagenum, bool is_read){
+int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
+	int i = stk.pop();
+	page_t* page = buffer + i;
 	page->table_id = table_id;
 	page->pagenum = pagenum;
 	//empty list
 	if(size++ == 0){
-		headidx = tailidx = page-buffer;
+		headidx = tailidx = i;
 		page->nextidx = headidx;
 		page->previdx = tailidx;
 	}
 	else{
 		page->nextidx = headidx;
 		page->previdx = tailidx;
-		buffer[headidx].previdx = page-buffer;
-		buffer[tailidx].nextidx = page-buffer;
+		buffer[headidx].previdx = i;
+		buffer[tailidx].nextidx = i;
 		headidx = page-buffer;
 		tailidx = page->previdx;
 	}
@@ -52,7 +56,7 @@ void bufferManager::push(page_t* page, int table_id, pagenum_t pagenum, bool is_
 		file_read_page(pagenum, page);
 		page->pin_count--;
 	}
-	return;
+	return i;
 }
 void bufferManager::remove(page_t* page){
 	while(page->is_active());
@@ -78,12 +82,12 @@ void bufferManager::pop(page_t* page){
 	if(headidx == page-buffer) headidx = n;
 	if(tailidx == page-buffer) tailidx = p;
 	size--;
+	stk.push(page-buffer);
 	return;
 }
 pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 	if(size == 0){
-		push(buffer+0, table_id, pagenum, is_read);
-		return 0;
+		return push(table_id, pagenum, is_read);
 	}
 	int i = headidx;
 	do{
@@ -92,8 +96,7 @@ pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum,
 			//LRU Policy
 			//pop and push, move head
 			pop(buffer+i);
-			push(buffer+i, table_id, pagenum, false);
-			return i;
+			return push(table_id, pagenum, false);
 		}
 		i = buffer[i].nextidx;
 	}while(i!=headidx);
@@ -103,19 +106,18 @@ pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum,
 		// search linked list or wait tail
 		// we select wait tail
 		remove(buffer+i);
-		push(buffer+i, table_id, pagenum, is_read);
-		return i;
+		return push(table_id, pagenum, is_read);
 	}
 	else{
 		//find not-used index
-		int i=0;
-		while(buffer[i].nextidx != -1) i++;
-		push(buffer+i, table_id, pagenum, is_read);
-		return i;
+		return push(table_id, pagenum, is_read);
 	}
 	return -1;
 }
-bufferManager::bufferManager(int buf_num):cap(buf_num),size(0),headidx(-1),tailidx(-1),fm(new fileManager(this)){
+
+//public
+
+bufferManager::bufferManager(int buf_num):cap(buf_num),size(0),headidx(-1),tailidx(-1),fm(new fileManager(this)),stk(buf_num){
 	buffer = new page_t[buf_num];
 	//TODO : bad_alloc exception
 }
@@ -144,6 +146,7 @@ int bufferManager::shutdown_buffer(void){
 	remove(buffer+tailidx);
 end:
 	delete[] buffer;
+	delete fm;
 	return 0;
 }
 page_t* bufferManager::get_header_ptr(int table_id, bool is_read){
@@ -180,4 +183,4 @@ pagenum_t bufferManager::get_page(int table_id, pagenum_t pagenum, bool is_read)
 	return get_pageidx_by_pagenum(table_id, pagenum, is_read);
 }
 
-bufferManager::~bufferManager(){delete[] buffer;}
+bufferManager::~bufferManager(){shutdown_buffer();}

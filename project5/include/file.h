@@ -61,8 +61,6 @@ struct page_t{
 		memset(this, 0, sizeof(page_t));
 		previdx = nextidx = pagenum = -1;
 	}
-//	page_t(const page_t& x) = delete;
-//	void operator =(const page_t& x) = delete;
 };
 
 #define PAGE_SIZE 4096

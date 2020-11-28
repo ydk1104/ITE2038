@@ -87,7 +87,8 @@ int close_buffer(int table_id){
 }
 
 int shutdown_buffer(void){
-	return bm->shutdown_buffer();
+	delete bm;
+	return 0;
 }
 
 int file_open(char* pathname){
