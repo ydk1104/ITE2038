@@ -19,11 +19,13 @@ SRCS_FOR_LIB:= \
 	$(SRCDIR)bpt.cpp \
 	$(SRCDIR)buffer.cpp \
 	$(SRCDIR)file.cpp \
+	$(SRCDIR)trx.cpp \
+	$(SRCDIR)lock.cpp \
 	$(SRCDIR)db.cpp
 
 OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.cpp=.o)
 
-CXXFLAGS+= -g -std=c++14 -fPIC -I $(INC)
+CXXFLAGS+= -g -std=c++14 -pthread -fPIC -I $(INC)
 
 TARGET=main
 

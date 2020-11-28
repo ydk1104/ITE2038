@@ -75,9 +75,11 @@ int internal_order = DEFAULT_INTERNAL_ORDER, leaf_order = DEFAULT_LEAF_ORDER;
  */
 bool verbose_output = false;
 
-bufferManager *bm;
+bufferManager* bm;
+trxManager* tm;
 
-int init_bpt(int buf_num){
+int init_bpt(int buf_num, trxManager* tm_ptr){
+	tm = tm_ptr;
 	bm = new bufferManager(buf_num);
 	return 0;
 }
@@ -112,6 +114,7 @@ page_t* get_header_ptr(int table_id, bool is_read){
 void free_node(node** node_ptr){
 	node* node = *node_ptr;
 	--node->buffer_ptr->pin_count;
+	node->buffer_ptr->unlock();
 	delete *node_ptr;
 	*node_ptr = NULL;
 }
@@ -150,7 +153,7 @@ node * find_leaf( int table_id, pagenum_t root, int64_t key) {
 /* Finds and returns the record to which
  * a key refers.
  */
-int find( int table_id, pagenum_t root, int64_t key, char* ret_val) {
+int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val) {
     int i = 0;
     node * c = find_leaf( table_id, root, key );
     if (c == NULL) return -1;
@@ -165,6 +168,28 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val) {
 		free_node(&c);
         return i;
 	}
+}
+
+int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
+	int record_idx = find_record(table_id, root, key, NULL);
+	if(record_idx == -1) return 1;
+	tm->record_lock(table_id, key, trx_id, false);
+	node* leaf = find_leaf(table_id, root, key);
+	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
+	free_node(&leaf);
+	// logging
+	return 0;
+}
+
+int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id){
+	int record_idx = find_record(table_id, root, key, NULL);
+	if(record_idx == -1) return 1;
+	tm->record_lock(table_id, key, trx_id, true);
+	node* leaf = find_leaf(table_id, root, key);
+	strncpy(leaf->pointers[record_idx].value, values, 120);
+	free_node(&leaf);
+	// logging
+	return 0;
 }
 
 /* Finds the appropriate place to
@@ -315,9 +340,6 @@ pagenum_t insert_into_leaf_after_splitting(pagenum_t root, node * leaf, int64_t 
     new_leaf->parent = leaf->parent;
     new_key = new_leaf->keys[0];
 	
-//	node_to_page(leaf, false);
-//	node_to_page(new_leaf, false);
-
     return insert_into_parent(root, leaf, new_key, new_leaf);
 }
 
@@ -416,8 +438,6 @@ pagenum_t insert_into_node_after_splitting(pagenum_t root, node * old_node, int 
         child->parent = new_node->pagenum;
 		node_to_page(&child, true);
     }
-//	node_to_page(old_node);
-//	node_to_page(new_node);
     /* Insert a new key into the parent of the two
      * nodes resulting from the split, with
      * the old node to the left and the new to the right.
@@ -526,7 +546,7 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
      * duplicates.
      */
 
-    if (root && find(table_id, root, key, NULL) != -1)
+    if (root && find_record(table_id, root, key, NULL) != -1)
         return -1;
 
     /* Case: the tree does not exist yet.
@@ -633,7 +653,6 @@ node * remove_entry_from_node(node * n, int64_t key, node * pointer) {
     else
         for (i = n->num_keys + 1; i < internal_order; i++)
             n->pages[i] = 0;
-//	node_to_page(&n, false);
     return n;
 }
 
@@ -949,7 +968,7 @@ pagenum_t delete_main(int table_id, pagenum_t root, int64_t key) {
     node * key_leaf;
     int key_record_idx;
 
-    key_record_idx = find(table_id, root, key, NULL);
+    key_record_idx = find_record(table_id, root, key, NULL);
     key_leaf = find_leaf(table_id, root, key);
     if (key_record_idx != -1 && key_leaf != NULL) {
         root = delete_entry(root, key_leaf, key, (void*)key_record_idx); 

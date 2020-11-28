@@ -5,6 +5,7 @@
 #include<type.h>
 #include<buffer.h>
 #include<fcntl.h>
+#include<mutex>
 #include<stdint.h>
 #include<sys/types.h>
 #include<sys/stat.h>
@@ -53,7 +54,10 @@ struct page_t{
 	pagenum_t pagenum;
 	int is_dirty;
 	int pin_count;
+	std::mutex page_latch;
 	int nextidx, previdx;
+	void lock(){page_latch.lock();}
+	void unlock(){page_latch.unlock();}
 	bool is_active(void){
 		return pin_count>0;
 	}

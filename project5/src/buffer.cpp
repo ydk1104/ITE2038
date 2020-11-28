@@ -9,10 +9,14 @@ void bufferManager::node_to_page(node** nptr, bool doFree){
 //	page_t *page = pages+pageidx;
 	page_t *page = n->buffer_ptr;
 	--page->pin_count;
+	page->unlock();
 	page->is_dirty = true;
 	if(doFree){
 		delete n;
 		*nptr = NULL;
+	}
+	else{
+			printf("error");
 	}
 }
 
@@ -20,6 +24,7 @@ void bufferManager::page_to_node(int table_id, pagenum_t pagenum, node** nptr){
 	node* n = *nptr;
 	if(n != NULL){
 		--n->buffer_ptr->pin_count;
+		n->buffer_ptr->unlock();
 		delete n;
 		*nptr = NULL;
 	}
@@ -35,6 +40,7 @@ void bufferManager::page_to_node(int table_id, pagenum_t pagenum, node** nptr){
 int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
 	int i = stk.pop();
 	page_t* page = buffer + i;
+	page->lock();
 	page->table_id = table_id;
 	page->pagenum = pagenum;
 	//empty list
@@ -52,13 +58,12 @@ int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
 		tailidx = page->previdx;
 	}
 	if(is_read){
-		page->pin_count++;
 		file_read_page(pagenum, page);
-		page->pin_count--;
 	}
 	return i;
 }
 void bufferManager::remove(page_t* page){
+	page->lock();
 	while(page->is_active());
 	pop(page);
 	if(page->is_dirty){
@@ -67,6 +72,7 @@ void bufferManager::remove(page_t* page){
 	memset(page, 0, sizeof(page_t));
 	page->table_id = page->pagenum =
 	page->nextidx = page->previdx = -1;
+	page->unlock();
 	return;
 }
 void bufferManager::pop(page_t* page){

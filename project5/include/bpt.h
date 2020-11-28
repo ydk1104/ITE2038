@@ -6,6 +6,7 @@
 #include <buffer.h>
 #include <type.h>
 #include <file.h>
+#include <trx.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -163,7 +164,7 @@ extern bool verbose_output;
 // FUNCTION PROTOTYPES.
 
 // layer.
-int init_bpt(int buf_num);
+int init_bpt(int buf_num, trxManager* tm);
 int close_buffer(int table_id);
 int shutdown_buffer(void);
 int file_open(char* pathname);
@@ -172,7 +173,9 @@ void file_free_page(int table_id, pagenum_t pagenum);
 page_t* get_header_ptr(int table_id, bool is_read);
 
 node * find_leaf( int table_id, pagenum_t root, int64_t key);
-int find( int table_id, pagenum_t root, int64_t key, char* ret_val);
+int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val);
+int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id);
+int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id);
 int cut( int length );
 
 // Insertion.

@@ -4,10 +4,21 @@
 
 char* pathname_to_table_id[TABLE_SIZE];
 int open_table_cnt;
+static trxManager *tm;
 
 int init_db (int buf_num){
-	return init_bpt(buf_num);
+	tm = new trxManager;
+	return init_bpt(buf_num, tm);
 }
+
+int trx_begin(void){
+	return tm->trx_begin();
+}
+
+int trx_commit(int trx_id){
+	return tm->trx_commit(trx_id);
+}
+
 //in db, table_id is 0 base, but output is 1 base
 //so return table_id+1
 int open_table (char *pathname){
@@ -30,25 +41,41 @@ int open_table (char *pathname){
 //so we use table_id-1
 int db_insert (int table_id, int64_t key, char * value){
 	--table_id;
-//	page_t header;
-//	file_read_page(0, &header);
 	page_t* header = get_header_ptr(table_id, true);
-	pagenum_t root = insert(table_id, header->data.header.rootPageNum, key, value);
+	pagenum_t rootPageNum = header->data.header.rootPageNum;
+	header->unlock();
+	pagenum_t root = insert(table_id, rootPageNum, key, value);
 	if(root==-1) return 1;
-//	file_read_page(0, &header);
+	header = get_header_ptr(table_id, true);
 	if(root != header->data.header.rootPageNum){
 		header->data.header.rootPageNum = root;
 		header->is_dirty = true;
 	}
+	//TODO : make get_root_page_num
+	header->unlock();
 	--header->pin_count;
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base
 //so we use table_id-1
-int db_find (int table_id, int64_t key, char * ret_val){
+int db_find (int table_id, int64_t key, char * ret_val, int trx_id){
 	--table_id;
 	page_t* header = get_header_ptr(table_id, true);
-	int idx = find(table_id, header->data.header.rootPageNum, key, ret_val);
+	pagenum_t rootPageNum = header->data.header.rootPageNum;
+	header->unlock();
+	int idx = find(table_id, rootPageNum, key, ret_val, trx_id);
+	--header->pin_count;
+	if(idx == -1) return 1;
+	return 0;
+}
+//in db, table_id is 0 base, but input is 1 base
+//so we use table_id-1
+int db_update (int table_id, int64_t key, char * values, int trx_id){
+	--table_id;
+	page_t* header = get_header_ptr(table_id, true);
+	pagenum_t rootPageNum = header->data.header.rootPageNum;
+	header->unlock();
+	int idx = update(table_id, rootPageNum, key, values, trx_id);
 	--header->pin_count;
 	if(idx == -1) return 1;
 	return 0;
@@ -58,12 +85,16 @@ int db_find (int table_id, int64_t key, char * ret_val){
 int db_delete (int table_id, int64_t key){
 	--table_id;
 	page_t* header = get_header_ptr(table_id, true);
-	pagenum_t root = delete_main(table_id, header->data.header.rootPageNum, key);
+	pagenum_t rootPageNum = header->data.header.rootPageNum;
+	header->unlock();
+	pagenum_t root = delete_main(table_id, rootPageNum, key);
 	if(root==-1) return 1;
+	header = get_header_ptr(table_id, true);
 	if(root != header->data.header.rootPageNum){
 		header->data.header.rootPageNum = root;
 		header->is_dirty = true;
 	}
+	header->unlock();
 	--header->pin_count;
 	return 0;
 }
@@ -77,5 +108,6 @@ int shutdown_db(void){
 		pathname_to_table_id[i] = NULL;
 	}
 	open_table_cnt = 0;
+	delete tm;
 	return shutdown_buffer();
 }
