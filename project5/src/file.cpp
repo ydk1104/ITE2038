@@ -30,7 +30,6 @@ page_t* fileManager::file_alloc_page(int table_id){
 	const int fd = table_id_to_fd[table_id];
 	page_t* head = get_header_ptr(table_id, true);
 	page_t* page;
-//	--head->pin_count;// - header is already pinned, but pin_count == 2
 	int freePageNum = head->data.header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
@@ -48,8 +47,6 @@ page_t* fileManager::file_alloc_page(int table_id){
 void fileManager::file_free_page(int table_id, pagenum_t pagenum){
 	const int fd = table_id_to_fd[table_id];
 	page_t *head = get_header_ptr(table_id, true);
-//	--head->pin_count; //- header is already pinned., but pin_count == 2
-
 	page_t* clean = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
 	memset(clean->byte, 0, sizeof(clean->byte));
 	clean->data.free.nextFreePage = head->data.header.freePageNum;
