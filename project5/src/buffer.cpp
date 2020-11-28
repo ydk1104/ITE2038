@@ -86,6 +86,7 @@ void bufferManager::pop(page_t* page){
 	return;
 }
 pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
+	std::unique_lock<std::mutex> lock(bufferManagerLatch);
 	if(size == 0){
 		return push(table_id, pagenum, is_read);
 	}

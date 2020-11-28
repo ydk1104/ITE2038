@@ -10,6 +10,7 @@ private:
 	fileManager* fm;
 	page_t* buffer;
 	int cap, size, headidx, tailidx;
+	std::mutex bufferManagerLatch;
 	class stack{
 	private:
 		int sz;
