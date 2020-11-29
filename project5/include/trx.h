@@ -34,14 +34,11 @@ private:
 	lockManager *lm;
 	std::mutex trx_manager_latch;
 public:
+	trxManager();
 	int trx_begin(void);
 	int trx_commit(int trx_id);
 	int trx_abort(int trx_id);
 	bool isDeadLock();
-enum{
-	SHARED_LOCK,
-	EXCLUSIVE_LOCK,
-};
 	void record_lock(int table_id, int64_t key, int trx_id, bool is_write);
 };
 

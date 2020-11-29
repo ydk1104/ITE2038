@@ -1,11 +1,18 @@
 #ifndef __record__
 #define __record__
+#include <stdint.h>
 #include <string.h>
 
 struct page_t;
 struct node;
 class bufferManager;
 class fileManager;
+class trxManager;
+
+enum{
+	SHARED_LOCK,
+	EXCLUSIVE_LOCK,
+};
 
 struct record{
 	char value[120];

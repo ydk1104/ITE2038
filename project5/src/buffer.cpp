@@ -2,38 +2,6 @@
 
 //private
 
-void bufferManager::node_to_page(node** nptr, bool doFree){
-	if(*nptr == NULL) return;
-	node* n = *nptr;
-//	pagenum_t pageidx = get_pageidx_by_pagenum(n->table_id, n->pagenum, false);
-//	page_t *page = pages+pageidx;
-	page_t *page = n->buffer_ptr;
-	page->unlock();
-	page->is_dirty = true;
-	if(doFree){
-		delete n;
-		*nptr = NULL;
-	}
-	else{
-			printf("error");
-	}
-}
-
-void bufferManager::page_to_node(int table_id, pagenum_t pagenum, node** nptr){
-	node* n = *nptr;
-	if(n != NULL){
-		n->buffer_ptr->unlock();
-		delete n;
-		*nptr = NULL;
-	}
-	if(pagenum == 0) return;
-	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, pagenum, true);
-	page_t* page = buffer+pageidx;
-	*nptr = new node(page);
-	return;
-}
-
-
 int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
 	int i = stk.pop();
 	page_t* page = buffer + i;
@@ -54,6 +22,8 @@ int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
 		headidx = page-buffer;
 		tailidx = page->previdx;
 	}
+	//LRU end, buffer unlock
+	bufferManagerLatch.unlock();
 	if(is_read){
 		file_read_page(pagenum, page);
 	}
@@ -88,7 +58,8 @@ void bufferManager::pop(page_t* page){
 	return;
 }
 pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
-	std::unique_lock<std::mutex> lock(bufferManagerLatch);
+//	std::unique_lock<std::mutex> lock(bufferManagerLatch);
+	bufferManagerLatch.lock();
 	if(size == 0){
 		return push(table_id, pagenum, is_read);
 	}
@@ -115,6 +86,7 @@ pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum,
 		//find not-used index
 		return push(table_id, pagenum, is_read);
 	}
+	bufferManagerLatch.unlock();
 	return -1;
 }
 
@@ -124,7 +96,6 @@ bufferManager::bufferManager(int buf_num):cap(buf_num),size(0),headidx(-1),taili
 	buffer = new page_t[buf_num];
 	//TODO : bad_alloc exception
 }
-//	int init_buffer(int buf_num);
 
 int bufferManager::close_buffer(int table_id){
 	if(size == 0) return 0;
@@ -158,8 +129,38 @@ page_t* bufferManager::get_header_ptr(int table_id, bool is_read){
 	return page;
 }
 
-void node_to_page(node** nptr, bool doFree);
-void page_to_node(int table_id, pagenum_t pagenum, node** nptr);
+void bufferManager::page_to_node(int table_id, pagenum_t pagenum, node** nptr){
+	node* n = *nptr;
+	if(n != NULL){
+		n->buffer_ptr->unlock();
+		delete n;
+		*nptr = NULL;
+	}
+	if(pagenum == 0) return;
+	pagenum_t pageidx = get_pageidx_by_pagenum(table_id, pagenum, true);
+	page_t* page = buffer+pageidx;
+	*nptr = new node(page);
+	return;
+}
+
+
+void bufferManager::node_to_page(node** nptr, bool doFree){
+	if(*nptr == NULL) return;
+	node* n = *nptr;
+//	pagenum_t pageidx = get_pageidx_by_pagenum(n->table_id, n->pagenum, false);
+//	page_t *page = pages+pageidx;
+	page_t *page = n->buffer_ptr;
+	page->unlock();
+	page->is_dirty = true;
+	if(doFree){
+		delete n;
+		*nptr = NULL;
+	}
+	else{
+			printf("error");
+	}
+}
+
 
 int bufferManager::file_open(char* pathname){
 	fm->file_open(pathname);

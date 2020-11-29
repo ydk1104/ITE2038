@@ -1,5 +1,6 @@
 #include"trx.h"
 
+trxManager::trxManager():lm(new lockManager(this)){}
 int trxManager::trx_begin(void){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[++trx_cnt];
