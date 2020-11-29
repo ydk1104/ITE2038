@@ -46,6 +46,7 @@ void bufferManager::pop(page_t* page){
 	if(size == 1){
 		headidx = tailidx = -1;
 		size--;
+		stk.push(page-buffer);
 		return;
 	}
 	int n = page->nextidx, p = page->previdx;
