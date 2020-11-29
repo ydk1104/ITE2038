@@ -16,6 +16,7 @@ int trx_begin(void){
 }
 
 int trx_commit(int trx_id){
+	if(tm->find(trx_id) == false) return 0;
 	return tm->trx_commit(trx_id);
 }
 
@@ -58,23 +59,32 @@ int db_insert (int table_id, int64_t key, char * value){
 //in db, table_id is 0 base, but input is 1 base
 //so we use table_id-1
 int db_find (int table_id, int64_t key, char * ret_val, int trx_id){
+	if(tm->find(trx_id) == false) return -1;
 	--table_id;
 	page_t* header = get_header_ptr(table_id, true);
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
 	int idx = find(table_id, rootPageNum, key, ret_val, trx_id);
-	if(idx == -1) return 1;
+	if(idx != 0) return tm->trx_abort(trx_id);
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base
 //so we use table_id-1
 int db_update (int table_id, int64_t key, char * values, int trx_id){
+	if(tm->find(trx_id) == false) return -1;
 	--table_id;
 	page_t* header = get_header_ptr(table_id, true);
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
-	int idx = update(table_id, rootPageNum, key, values, trx_id);
-	if(idx == -1) return 1;
+	int idx = update(table_id, rootPageNum, key, values, trx_id, false);
+	if(idx != 0) return tm->trx_abort(trx_id);
+	return 0;
+}
+int db_undo_update (int table_id, int64_t key, char * old_values, int trx_id){
+	page_t* header = get_header_ptr(table_id, true);
+	pagenum_t rootPageNum = header->data.header.rootPageNum;
+	header->unlock();
+	update(table_id, rootPageNum, key, old_values, trx_id, true);
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base

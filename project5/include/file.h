@@ -83,7 +83,7 @@ public:
 	// Write an in-memory page(src) to the on-disk page
 	void file_write_page(pagenum_t pagenum, const page_t* src);
 	page_t* get_header_ptr(int table_id, bool is_read);
-	pagenum_t get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read);
+	page_t* get_page_by_pagenum(int table_id, pagenum_t pagenum, bool is_read);
 };
 
 #endif

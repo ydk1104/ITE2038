@@ -172,22 +172,27 @@ int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val) {
 int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 	int record_idx = find_record(table_id, root, key, NULL);
 	if(record_idx == -1) return 1;
-	tm->record_lock(table_id, key, trx_id, false);
+	if(!tm->record_lock(table_id, key, trx_id, false)) return 1;
 	node* leaf = find_leaf(table_id, root, key);
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
 	free_node(&leaf);
 	// logging
+	tm->logging(FIND, table_id, key, NULL, trx_id);
 	return 0;
 }
 
-int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id){
-	int record_idx = find_record(table_id, root, key, NULL);
-	if(record_idx == -1) return 1;
-	tm->record_lock(table_id, key, trx_id, true);
+int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo){
+	int record_idx;
+	if(!undo){
+		record_idx = find_record(table_id, root, key, NULL);
+		if(record_idx == -1) return 1;
+		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
+	}
 	node* leaf = find_leaf(table_id, root, key);
 	strncpy(leaf->pointers[record_idx].value, values, 120);
 	free_node(&leaf);
 	// logging
+	if(!undo) tm->logging(UPDATE, table_id, key, values, trx_id);
 	return 0;
 }
 

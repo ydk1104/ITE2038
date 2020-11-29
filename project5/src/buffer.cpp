@@ -30,7 +30,6 @@ int bufferManager::push(int table_id, pagenum_t pagenum, bool is_read){
 	return i;
 }
 void bufferManager::remove(page_t* page){
-	page->lock();
 	pop(page);
 	if(page->is_dirty){
 		file_write_page(page->pagenum, page);
@@ -42,6 +41,8 @@ void bufferManager::remove(page_t* page){
 	return;
 }
 void bufferManager::pop(page_t* page){
+	//caller shuold unlock
+	page->lock();
 	//one node
 	if(size == 1){
 		headidx = tailidx = -1;
@@ -61,6 +62,7 @@ void bufferManager::pop(page_t* page){
 pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 //	std::unique_lock<std::mutex> lock(bufferManagerLatch);
 	bufferManagerLatch.lock();
+	//unlock in push, all return has push
 	if(size == 0){
 		return push(table_id, pagenum, is_read);
 	}
@@ -71,6 +73,7 @@ pagenum_t bufferManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum,
 			//LRU Policy
 			//pop and push, move head
 			pop(buffer+i);
+			buffer[i].unlock();
 			return push(table_id, pagenum, false);
 		}
 		i = buffer[i].nextidx;
@@ -183,8 +186,8 @@ void bufferManager::file_write_page(pagenum_t pagenum, const page_t* src){
 	return fm->file_write_page(pagenum, src);
 }
 
-pagenum_t bufferManager::get_page(int table_id, pagenum_t pagenum, bool is_read){
-	return get_pageidx_by_pagenum(table_id, pagenum, is_read);
+page_t* bufferManager::get_page(int table_id, pagenum_t pagenum, bool is_read){
+	return buffer + get_pageidx_by_pagenum(table_id, pagenum, is_read);
 }
 
 bufferManager::~bufferManager(){shutdown_buffer();}

@@ -4,7 +4,6 @@
 
 int table_count;
 int table_id_to_fd[TABLE_SIZE];
-page_t* pages;
 int buf_size;
 int start, temp, size, headidx, tailidx;
 
@@ -33,11 +32,11 @@ page_t* fileManager::file_alloc_page(int table_id){
 	int freePageNum = head->data.header.freePageNum;
 	if(freePageNum){
 		page_t free_page;
-		page = pages+get_pageidx_by_pagenum(table_id, freePageNum, true);
+		page = get_page_by_pagenum(table_id, freePageNum, true);
 		head->data.header.freePageNum = page->data.free.nextFreePage;
 	}
 	else{
-		page = pages+get_pageidx_by_pagenum(table_id, freePageNum = head->data.header.numOfPages++, false);
+		page = get_page_by_pagenum(table_id, freePageNum = head->data.header.numOfPages++, false);
 	}
 	head->is_dirty = true;
 	head->unlock();
@@ -47,7 +46,7 @@ page_t* fileManager::file_alloc_page(int table_id){
 void fileManager::file_free_page(int table_id, pagenum_t pagenum){
 	const int fd = table_id_to_fd[table_id];
 	page_t *head = get_header_ptr(table_id, true);
-	page_t* clean = pages + get_pageidx_by_pagenum(table_id, pagenum, false);
+	page_t* clean = get_page_by_pagenum(table_id, pagenum, false);
 	memset(clean->byte, 0, sizeof(clean->byte));
 	clean->data.free.nextFreePage = head->data.header.freePageNum;
 	clean->pagenum = pagenum;
@@ -60,18 +59,12 @@ void fileManager::file_free_page(int table_id, pagenum_t pagenum){
 // Read an on-disk page into the in-memory page structure(dest)
 void fileManager::file_read_page(pagenum_t pagenum, page_t* dest){
 	const int table_id = dest->table_id, fd = table_id_to_fd[table_id];
-//	if(dest->pin_count != 1){
-//		printf("read %ld, pin %d\n", pagenum, dest->pin_count);
-//	}
 	lseek(fd, pagenum * PAGE_SIZE, SEEK_SET);
 	read(fd, dest->byte, PAGE_SIZE);
 }
 // Write an in-memory page(src) to the on-disk page
 void fileManager::file_write_page(pagenum_t pagenum, const page_t* src){
 	const int table_id = src->table_id, fd = table_id_to_fd[table_id];
-//	if(src->pin_count != 0){
-//		printf("write %ld, pin %d\n", pagenum, src->pin_count);
-//	}
 	lseek(fd, pagenum * PAGE_SIZE, SEEK_SET);
 	write(fd, src->byte, PAGE_SIZE);
 }
@@ -80,6 +73,6 @@ page_t* fileManager::get_header_ptr(int table_id, bool is_read){
 	return bm->get_header_ptr(table_id, is_read);
 }
 
-pagenum_t fileManager::get_pageidx_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
+page_t* fileManager::get_page_by_pagenum(int table_id, pagenum_t pagenum, bool is_read){
 	return bm->get_page(table_id, pagenum, is_read);
 }
