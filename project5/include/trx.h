@@ -32,6 +32,7 @@ public:
 		end(lm);
 	}
 	void add_edge(int x){
+		if(x==trx_id) return; // self loop is an-available;
 		edge.push_back(x);
 	}
 	std::list<int>::iterator begin(){

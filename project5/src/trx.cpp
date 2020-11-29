@@ -27,7 +27,7 @@ int trxManager::trx_abort(trx_t& trx){
 	return trx_id;
 }
 bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
-	bool flag = true;
+	bool flag = false;
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
 		if(now == trxs.end()){
@@ -35,9 +35,9 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
 			continue;
 		}
 		bool& visit = visited[now->second.get_trx_id()];
-		if(visit) return false;
+		if(visit) return true;
 		visit = true;
-		flag &= dfs(visited, now->second);
+		flag |= dfs(visited, now->second);
 		it++;
 	}
 	return flag;
