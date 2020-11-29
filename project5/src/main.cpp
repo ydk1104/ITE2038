@@ -6,7 +6,7 @@
 
 // MAIN
 
-#define PRINT
+//#define PRINT
 #ifndef PRINT 
 	#define printf(x, ...) (void*)(x)
 #endif

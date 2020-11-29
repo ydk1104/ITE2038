@@ -3,7 +3,6 @@
 
 lockManager::lockManager(trxManager* tm):tm(tm){}
 bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode, std::mutex& trx_manager_latch){
-	printf("ac : %d %d %d %d\n", table_id, key, trx_id, lock_mode);
 	std::unique_lock<std::mutex> trx_lock(trx_manager_latch);
 	auto& trx = (*tm)[trx_id];
 	//if trx already acquire lock,
@@ -58,7 +57,6 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 			//add edge at front s locks, one x lock
 			for(lock_t* i = l->prev; i != head; i = i->prev){
 				trx.add_edge(i->trx_id);
-				printf("add edge : %d(%d) -> %d\n", l->trx_id, trx.get_trx_id(), i->trx_id);
 				if(i->lock_mode == EXCLUSIVE_LOCK) break;
 			}
 			//detect dead_lock
@@ -81,7 +79,6 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	return true;
 }
 void lockManager::lock_release(lock_t* lock_obj){
-	printf("re : %d %d\n", lock_obj->trx_id, lock_obj->lock_mode);
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	lock_t *head = lock_obj->head, *next = lock_obj->next;
 /* case : 4

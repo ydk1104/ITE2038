@@ -24,7 +24,6 @@ private:
 	public:
 		log_t(int type, int table_id, int key, int trx_id, char* value):
 				type(type), table_id(table_id), key(key), trx_id(trx_id), value(value ? std::shared_ptr<record>(new record(value)) : NULL){}
-		log_t(const log_t& x){value = NULL; printf("copy\n");}
 		void undo(){
 			switch(type){
 				case UPDATE :
@@ -35,7 +34,6 @@ private:
 					break;
 			}
 		}
-		~log_t(){printf("value : %p\n", value.get());}
 	};
 	std::vector<log_t> logs;
 	std::unordered_map<std::pair<int, int64_t>, int, my_hash> acquired_lock;	bool aborted = false;

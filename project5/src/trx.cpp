@@ -31,7 +31,6 @@ int trxManager::trx_abort(trx_t& trx){
 
 bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
 	bool flag = false;
-	for(auto i : visited) printf("%d %d\n", i.first, i.second);
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
 		if(now == trxs.end()){
