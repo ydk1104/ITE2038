@@ -43,16 +43,33 @@ void insert_test(int N, int table_id){
 }
 
 void find_test(int N, int table_id){
+	int trx_id = trx_begin();
 	N /= 10;
 	char s[11] = "0123456789";
 	char val[120];
 	int64_t offset = 0;
 	for(int i=0; i<N; i++){
 		int64_t key = offset+i;
-		int error = db_find(table_id, key, val, 1);
-		printf("find test : %ld %s\n", key, val);
+		int error = db_find(table_id, key, val, trx_id);
+		printf("find test : %d %ld %s\n", table_id, key, val);
 		if(error) printf("FAILED"), exit(-1);
 	}
+	trx_commit(trx_id);
+}
+
+void update_test(int N, int table_id){
+	int trx_id = trx_begin();
+	N /= 10;
+	char s[11] = "0123456789";
+	char val[120];
+	int64_t offset = 0;
+	for(int i=0; i<N; i++){
+		int64_t key = offset+i;
+		int error = db_update(table_id, key, s+i%10, trx_id);
+		printf("update test : %d %ld %s\n", table_id, key, s+i%10);
+		if(error) printf("FAILED"), exit(-1);
+	}
+	trx_commit(trx_id);
 }
 
 int open_table_test(void){
@@ -99,18 +116,26 @@ err:
 typedef enum{
 	TEST_OPEN,
 	TEST_RAM_INSERT,
+	TEST_RAM_FIND,
 	TEST_DISK_INSERT,
+	TEST_DISK_FIND,
 }TEST;
 
-void find_multi_thread(int N, int s, int e){
-	std::thread find_threads[10];
+void find_multi_thread(int N, int M, int s, int e){
+	std::vector<std::thread> find_threads;
+	std::vector<std::thread> update_threads;
 	for(int i=s; i<e; i++){
-		find_threads[i] = (std::thread(find_test, N, i));
+		for(int j=0; j<M; j++){
+			find_threads.emplace_back(std::thread(find_test, N, i));
+			update_threads.emplace_back(std::thread(update_test, N, i));
+		}
 	}
-	for(int i=s; i<e; i++){
-		find_threads[i].join();
+	for(auto& i:find_threads){
+		i.join();
 	}
-	
+	for(auto& i:update_threads){
+		i.join();
+	}
 }
 
 void test(TEST test){
@@ -120,12 +145,16 @@ void test(TEST test){
 	}
 	int tbl_id;
 	open_table("/mnt/ramdisk/out2.txt");
-	if(test == TEST_RAM_INSERT)
+	if(test == TEST_RAM_INSERT || test == TEST_RAM_FIND)
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
 		tbl_id = open_table("out/out.txt");
 	int N = 1e6;
-	find_multi_thread(N, 1, 3);
+	switch(test){
+	case TEST_RAM_FIND :
+	case TEST_DISK_FIND :
+		find_multi_thread(N/10, 10, 1, 3);
+	}
 //	find_test(N, 1);
 //	close_table(1);
 //	find_test(N, 2);
@@ -135,7 +164,7 @@ void test(TEST test){
 int my_main(){
 	const int buff_size = 10000;
 	init_db(buff_size);
-	TEST type = TEST_RAM_INSERT;
+	TEST type = TEST_RAM_FIND;
 	test(type);
 	shutdown_db();
 	return 0;

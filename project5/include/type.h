@@ -5,6 +5,8 @@
 
 struct page_t;
 struct node;
+class lock_t;
+class lockManager;
 class bufferManager;
 class fileManager;
 class trxManager;
