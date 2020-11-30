@@ -158,7 +158,6 @@ int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val) {
     if (c == NULL) return -1;
     for (i = 0; i < c->num_keys; i++)
         if (c->keys[i] == key) break;
-	printf("%d\n", i);
     if (i == c->num_keys){
  		free_node(&c);
 		return -1;
