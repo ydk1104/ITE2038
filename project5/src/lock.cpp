@@ -30,8 +30,10 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	l->head = head;
 
 	//update x_lock
-	head->x_cnt++;
-	head->x_lock = l;
+	if(lock_mode == EXCLUSIVE_LOCK){
+		head->x_cnt++;
+		head->x_lock = l;
+	}
 	
 	//if lock_mode == exclusive, check no lock
 	if(l != head->next){
@@ -83,7 +85,7 @@ void lockManager::lock_release(lock_t* lock_obj){
 	lock_t *head = lock_obj->head, *next = lock_obj->next;
 /* case : 4
  * 1. S->S. impossible
- * 2. S->X. notify if head->S->X.
+ * 2. S->X. notify if head->S->X or head->S1->S2->X1
  * 3. X->S. notify {}, {} = head->X->{S1,S2,...SN->X}
  * 4. X->X. notify if 3 when N=0
  */
@@ -108,6 +110,9 @@ void lockManager::lock_release(lock_t* lock_obj){
 	}
 	lock_obj->prev->next = next;
 	if(next) next->prev = lock_obj->prev;
+	else head->tail = lock_obj->prev;
+	//case 2-2.
+	if(next && next->lock_mode) next->c.notify_one();
 end:
 	if(lock_obj->lock_mode == EXCLUSIVE_LOCK) head->x_cnt--;
 	delete lock_obj;

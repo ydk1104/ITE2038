@@ -25,7 +25,7 @@ SRCS_FOR_LIB:= \
 
 OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.cpp=.o)
 
-CXXFLAGS+= -g -std=c++14 -pthread -fPIC -I $(INC)
+CXXFLAGS+= -g -std=c++17 -pthread -fPIC -I $(INC)
 
 TARGET=main
 
