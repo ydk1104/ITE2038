@@ -96,7 +96,7 @@ public:
 	int trx_commit(int trx_id);
 	int trx_abort(int trx_id);
 	int trx_abort(trx_t& trx);
-	bool dfs(std::unordered_map<int, bool>& visited, trx_t& trx);
+	bool dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id);
 	bool is_dead_lock(trx_t& trx);
 	bool record_lock(int table_id, int64_t key, int trx_id, bool is_write);
 	bool find(int trx_id);

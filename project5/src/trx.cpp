@@ -29,7 +29,7 @@ int trxManager::trx_abort(trx_t& trx){
 //	return trx_id;
 }
 
-bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
+bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id){
 	bool flag = false;
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
@@ -37,10 +37,11 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
 			trx.erase(it++);
 			continue;
 		}
+		if(start_id == now->second.get_trx_id()) return true;
 		bool* visit = &visited[now->second.get_trx_id()];
-		if(*visit) return true;
+		if(*visit) return false;
 		*visit = true;
-		flag |= dfs(visited, now->second);
+		flag |= dfs(visited, now->second, start_id);
 		it++;
 	}
 	return flag;
@@ -49,7 +50,7 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx){
 bool trxManager::is_dead_lock(trx_t& trx){
 	auto visited = std::unordered_map<int, bool>();
 	visited[trx.get_trx_id()] = true;
-	return dfs(visited, trx);
+	return dfs(visited, trx, trx.get_trx_id());
 }
 bool trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write){
 	return lm->lock_acquire(table_id, key, trx_id, is_write ? EXCLUSIVE_LOCK : SHARED_LOCK, trx_manager_latch);
