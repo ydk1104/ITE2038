@@ -51,7 +51,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 			//unlock trx_lock before wait
 			//don't need to re-lock
 			trx_lock.unlock();
-			l->c.wait(lock, [&cnt]{
+			l->c.wait(lock, [&cnt, &l]{
 				return cnt++;
 			});
 		}
@@ -89,31 +89,25 @@ void lockManager::lock_release(lock_t* lock_obj){
  * 3. X->S. notify {}, {} = head->X->{S1,S2,...SN->X}
  * 4. X->X. notify if 3 when N=0
  */
-	if(lock_obj == head->next){
-		if(next == NULL){
-			head->next = NULL;
-			head->tail = head;
-			goto end;
-		}
-		if(next->lock_mode == EXCLUSIVE_LOCK){
-			next->c.notify_one();
-		}
-		else{
-			lock_t* i = next;
-			while(i){
-				i->c.notify_one();
-				// 3 + 4
-				if(i->lock_mode == EXCLUSIVE_LOCK) break;
-				i = i->next;
-			}
-		}
-	}
+	if(lock_obj->lock_mode == EXCLUSIVE_LOCK) head->x_cnt--;
 	lock_obj->prev->next = next;
 	if(next) next->prev = lock_obj->prev;
 	else head->tail = lock_obj->prev;
-	//case 2-2.
-	if(next && next->lock_mode) next->c.notify_one();
-end:
-	if(lock_obj->lock_mode == EXCLUSIVE_LOCK) head->x_cnt--;
 	delete lock_obj;
+	if(next == head->next){
+			{
+			lock_t* i = next;
+			while(i){
+				// 1 + 3
+				// 2 + 4
+				// + head-{release S1}-S2-L2
+				i->c.notify_one();
+				if(i->lock_mode == EXCLUSIVE_LOCK) break;
+				i = i->next;
+			}
+			if(i){
+				i->c.notify_one();
+			}
+		}
+	}
 }
