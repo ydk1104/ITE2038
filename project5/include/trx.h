@@ -45,6 +45,7 @@ public:
 		for(auto i:lock) lm->lock_release(i);
 	}
 	void commit(lockManager* lm){
+		//printf("commit %x\n", trx_id);
 		end(lm);
 	}
 	void abort(lockManager* lm){
@@ -60,6 +61,7 @@ public:
 	}
 	void add_edge(int x){
 		if(x==trx_id) return; // self loop is an-available;
+		//printf("%x<-%x\n", x, trx_id);
 		edge.push_back(x);
 	}
 	std::list<int>::iterator begin(){

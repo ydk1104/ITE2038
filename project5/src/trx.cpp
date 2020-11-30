@@ -39,7 +39,10 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int sta
 		}
 		if(start_id == now->second.get_trx_id()) return true;
 		bool* visit = &visited[now->second.get_trx_id()];
-		if(*visit) return false;
+		if(*visit){
+			it++;
+			continue;
+		}
 		*visit = true;
 		flag |= dfs(visited, now->second, start_id);
 		it++;
