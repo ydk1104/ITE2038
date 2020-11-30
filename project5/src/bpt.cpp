@@ -158,6 +158,7 @@ int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val) {
     if (c == NULL) return -1;
     for (i = 0; i < c->num_keys; i++)
         if (c->keys[i] == key) break;
+	printf("%d\n", i);
     if (i == c->num_keys){
  		free_node(&c);
 		return -1;
@@ -183,8 +184,8 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 
 int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo){
 	int record_idx;
-	if(!undo){
 		record_idx = find_record(table_id, root, key, NULL);
+	if(!undo){
 		if(record_idx == -1) return 1;
 		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
 	}
