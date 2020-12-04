@@ -36,15 +36,16 @@ private:
 		}
 	};
 	std::vector<log_t> logs;
-	std::unordered_map<std::pair<int, int64_t>, lock_t*, my_hash> acquired_lock;	bool aborted = false;
+	std::unordered_map<std::pair<int, int64_t>, int, my_hash> acquired_lock;	bool aborted = false;
 public:
 	trx_t():trx_t(0){}
 	trx_t(int trx_id):trx_id(trx_id){}
 	const int get_trx_id()const{return trx_id;}
 	void end(lockManager* lm){
-		for(auto i:acquired_lock) lm->lock_release(i.second);
+		for(auto i:lock) lm->lock_release(i);
 	}
 	void commit(lockManager* lm){
+		//printf("commit %x\n", trx_id);
 		end(lm);
 	}
 	void abort(lockManager* lm){
@@ -60,7 +61,7 @@ public:
 	}
 	void add_edge(int x){
 		if(x==trx_id) return; // self loop is an-available;
-		printf("%x<-%x\n", x, trx_id);
+		//printf("%x<-%x\n", x, trx_id);
 		edge.push_back(x);
 	}
 	std::list<int>::iterator begin(){
@@ -75,23 +76,10 @@ public:
 	void add_lock(lock_t* lock_obj){
 		lock.push_back(lock_obj);
 	}
-	bool lock_acquired(std::pair<int, int64_t>& key, lock_t* lock){
-		auto& acquired_lock_ = acquired_lock[key];
-		if(acquired_lock_ && 
-			acquired_lock_->lock_mode < lock->lock_mode){
-
-			lock_t* next = acquired_lock_->next;
-			lock_t* head = acquired_lock_->head;
-			acquired_lock_->prev->next = next;
-			if(next) next->prev = acquired_lock_->prev;
-			else head->tail = acquired_lock_->prev;
-			delete acquired_lock_;
-
-			acquired_lock_ = lock;
-			return false;
-		}
-		if(acquired_lock_ == NULL){
-			acquired_lock_ = lock;
+	bool lock_acquired(std::pair<int, int64_t>& key, int lock_mode){
+		int& acquired_lock_ = acquired_lock[key];
+		if(acquired_lock_ <= lock_mode){
+			acquired_lock_ = lock_mode + 1;
 			return false;
 		}
 		return true;
@@ -119,4 +107,3 @@ public:
 };
 
 #endif
-
