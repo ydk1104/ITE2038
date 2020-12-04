@@ -8,15 +8,12 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	//if trx already acquire lock,
 	//don't need to acquire duplication lock
 	std::pair<int, int64_t> p = {table_id, key};
+	if(trx.lock_acquired(p, lock_mode)) return true;
 	
 	lock_t* l = new lock_t;
 	l->lock_mode = lock_mode;
 	l->trx_id = trx_id;
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
-	
-	if(trx.lock_acquired(p, l)){
-		return true;
-	}
 	
 	//trx has lock_t list because of commit
 	trx.add_lock(l);
@@ -37,7 +34,6 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		head->x_cnt++;
 		head->x_lock = l;
 	}
-	
 	
 	//if lock_mode == exclusive, check no lock
 	if(l != head->next){
@@ -85,7 +81,6 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	return true;
 }
 void lockManager::lock_release(lock_t* lock_obj){
-	if(lock_obj == NULL) return;
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	lock_t *head = lock_obj->head, *next = lock_obj->next;
 /* case : 4
