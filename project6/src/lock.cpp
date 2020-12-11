@@ -37,7 +37,17 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		head->x_cnt++;
 		head->x_lock = l;
 	}
-	
+
+	//test
+	{
+		auto& i = head->next;
+		printf("key : %d %ld, ", table_id, key);
+		while(i != NULL){
+			printf("%ld ", i->trx_id);
+			i = i->next;
+		}
+		printf("\n");
+	}
 	
 	//if lock_mode == exclusive, check no lock
 	if(l != head->next){
