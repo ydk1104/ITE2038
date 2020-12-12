@@ -52,10 +52,6 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		printf("\n");
 	}
 	
-	//if lock_mode == exclusive, check no lock
-	if(l != head->next){
-		return 0;
-	}
 	if(l->lock_mode == SHARED_LOCK){
 		//if lock_mode == shared, check x lock
 		if(head->x_cnt == 0) return 0;
@@ -63,6 +59,8 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		trx.add_edge(head->x_lock->trx_id);
 	}
 	else{
+		//if lock_mode == exclusive, check no lock
+		if(l == head->next) return 0;
 		//add edge at front s locks, one x lock
 		for(lock_t* i = l->prev; i != head; i = i->prev){
 			trx.add_edge(i->trx_id);
