@@ -222,7 +222,7 @@ int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id,
 	strncpy(leaf->pointers[record_idx].value, values, 120);
 	// logging
 	if(!undo) tm->logging(UPDATE, table_id, key, values, trx_id);
-	free_node(&leaf);
+	node_to_page(&leaf, true);
 	return 0;
 }
 
