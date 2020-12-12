@@ -41,6 +41,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	}
 
 	//test
+	if(0)
 	{
 		auto& i = head->next;
 		printf("key : %d %ld, ", table_id, key);
@@ -99,6 +100,7 @@ void lockManager::lock_wait(lock_t* l){
 					head->next->trx_id == l->trx_id);
 		});
 	}
+	trx_lock.unlock();
 	return;
 }
 

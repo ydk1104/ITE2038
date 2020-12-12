@@ -22,7 +22,7 @@ void insert_test(int N, int table_id){
       printf("insert test : %ld\n", key);
       if(error) printf("FAILED"), exit(-1);
    }// */
-   for(int i=0; i<N; i++){
+/*   for(int i=0; i<N; i++){
       int64_t key = offset+i;
       int error = db_find(table_id, key, val, 1);
       printf("find test : %ld %s\n", key, val);
@@ -157,7 +157,7 @@ void test(TEST test){
 		break;
 	case TEST_RAM_FIND :
 	case TEST_DISK_FIND :
-		find_multi_thread(N/10, 10, 1, 3);
+		find_multi_thread(N/10, 10, 1, 2);
    }
 //   find_test(N, 1);
 //   close_table(1);
@@ -169,8 +169,7 @@ int my_main(){
     const int buff_size = 10000;
     init_db(buff_size);
     TEST type = TEST_DISK_FIND;
-	test(TEST_DISK_INSERT);
-//    test(type);
+    test(type);
     shutdown_db();
     return 0;
 }

@@ -204,7 +204,6 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 	//acquire shared lock
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 0, record_idx);
 	if(leaf == NULL) return 1;
-	printf("find succ!\n");
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
 	// logging
 	tm->logging(FIND, table_id, key, NULL, trx_id);
@@ -220,7 +219,6 @@ int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id,
 /*	if(!undo){
 		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
 	}*/
-	printf("update succ!\n");
 	strncpy(leaf->pointers[record_idx].value, values, 120);
 	// logging
 	if(!undo) tm->logging(UPDATE, table_id, key, values, trx_id);
