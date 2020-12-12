@@ -55,8 +55,12 @@ bool trxManager::is_dead_lock(trx_t& trx){
 	visited[trx.get_trx_id()] = true;
 	return dfs(visited, trx, trx.get_trx_id());
 }
-bool trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write){
-	return lm->lock_acquire(table_id, key, trx_id, is_write ? EXCLUSIVE_LOCK : SHARED_LOCK, trx_manager_latch);
+bool trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l){
+	return lm->lock_acquire(table_id, key, trx_id, is_write ? EXCLUSIVE_LOCK : SHARED_LOCK, trx_manager_latch, l);
+}
+
+void trxManager::record_lock_wait(lock_t* l){
+	return lm->lock_wait(l);
 }
 
 bool trxManager::find(int trx_id){

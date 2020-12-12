@@ -13,7 +13,9 @@ class trx_t{
 private:
 	const int trx_id;
 	std::list<int> edge;
-	std::vector<lock_t*> lock;
+	std::vector<lock_t*> locks;
+	std::mutex trx_latch;
+	std::unique_lock<std::mutex> trx_lock;
 	class log_t{
 	private:
 		int type;
@@ -39,7 +41,7 @@ private:
 	std::unordered_map<std::pair<int, int64_t>, lock_t*, my_hash> acquired_lock;	bool aborted = false;
 public:
 	trx_t():trx_t(0){}
-	trx_t(int trx_id):trx_id(trx_id){}
+	trx_t(int trx_id):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock){}
 	const int get_trx_id()const{return trx_id;}
 	void end(lockManager* lm){
 		for(auto i:acquired_lock) lm->lock_release(i.second);
@@ -73,7 +75,7 @@ public:
 		edge.erase(it);
 	}
 	void add_lock(lock_t* lock_obj){
-		lock.push_back(lock_obj);
+		locks.push_back(lock_obj);
 	}
 	bool lock_acquired(std::pair<int, int64_t>& key, lock_t* lock){
 		auto& acquired_lock_ = acquired_lock[key];
@@ -96,6 +98,9 @@ public:
 		}
 		return true;
 	}
+	void lock(){trx_lock.lock();}
+	void unlock(){trx_lock.unlock();}
+	std::unique_lock<std::mutex>& get_trx_lock(){return trx_lock;}
 };
 
 class trxManager{
@@ -112,7 +117,8 @@ public:
 	int trx_abort(trx_t& trx);
 	bool dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id);
 	bool is_dead_lock(trx_t& trx);
-	bool record_lock(int table_id, int64_t key, int trx_id, bool is_write);
+	bool record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l);
+	void record_lock_wait(lock_t* l);
 	bool find(int trx_id);
 	void logging(int type, int table_id, int64_t key, char* value, int trx_id);
 	trx_t& operator [](int trx_id);

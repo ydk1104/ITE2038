@@ -173,7 +173,7 @@ void file_free_page(int table_id, pagenum_t pagenum);
 page_t* get_header_ptr(int table_id, bool is_read);
 
 node * find_leaf( int table_id, pagenum_t root, int64_t key);
-int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val);
+int find_record( node* c);
 int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id);
 int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo);
 int cut( int length );

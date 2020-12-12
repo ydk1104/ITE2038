@@ -6,7 +6,7 @@
 
 // MAIN
 
-// #define PRINT
+#define PRINT
 #ifndef PRINT 
    #define printf(x, ...) (void*)(x)
 #endif
@@ -16,7 +16,7 @@ void insert_test(int N, int table_id){
    char s[11] = "0123456789";
    char val[120];
    int64_t offset = 0;
-/*   for(int i=0; i<N; i++){
+   for(int i=0; i<N; i++){
       int64_t key = offset+i;
       int error = db_insert(table_id, key, s+(i%10));
       printf("insert test : %ld\n", key);
@@ -139,21 +139,25 @@ void find_multi_thread(int N, int M, int s, int e){
 }
 
 void test(TEST test){
-   if(test == TEST_OPEN){
-      open_table_test();
-      return;
-   }
-   int tbl_id;
-   open_table("/mnt/ramdisk/out2.txt");
-   if(test == TEST_RAM_INSERT || test == TEST_RAM_FIND)
-      tbl_id = open_table("/mnt/ramdisk/out.txt");
-   else
-      tbl_id = open_table("out/out.txt");
-   int N = 1e6;
-   switch(test){
-   case TEST_RAM_FIND :
-   case TEST_DISK_FIND :
-      find_multi_thread(N/10, 10, 1, 3);
+	if(test == TEST_OPEN){
+		open_table_test();
+		return;
+	}
+	int tbl_id;
+//   open_table("/mnt/ramdisk/out2.txt");
+	if(test == TEST_RAM_INSERT || test == TEST_RAM_FIND)
+		tbl_id = open_table("/mnt/ramdisk/out.txt");
+	else
+		tbl_id = open_table("out/out.txt");
+	int N = 1e6;
+	switch(test){
+	case TEST_RAM_INSERT :
+	case TEST_DISK_INSERT :
+		insert_test(N/10, tbl_id);
+		break;
+	case TEST_RAM_FIND :
+	case TEST_DISK_FIND :
+		find_multi_thread(N/10, 10, 1, 3);
    }
 //   find_test(N, 1);
 //   close_table(1);
@@ -162,14 +166,15 @@ void test(TEST test){
 }
 
 int my_main(){
-   const int buff_size = 10000;
-   init_db(buff_size);
-   TEST type = TEST_RAM_FIND;
-   test(type);
-   shutdown_db();
-   return 0;
+    const int buff_size = 10000;
+    init_db(buff_size);
+    TEST type = TEST_DISK_FIND;
+	test(TEST_DISK_INSERT);
+//    test(type);
+    shutdown_db();
+    return 0;
 }
 
 int main( int argc, char ** argv ) {
-   return my_main();
+    return my_main();
 }
