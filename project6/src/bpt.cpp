@@ -152,49 +152,79 @@ node * find_leaf( int table_id, pagenum_t root, int64_t key) {
 /* Finds and returns the record to which
  * a key refers.
  */
-int find_record( int table_id, pagenum_t root, int64_t key, char* ret_val) {
+int find_record(node* c, int64_t key) {
     int i = 0;
-    node * c = find_leaf( table_id, root, key );
+	//can't find leaf
     if (c == NULL) return -1;
+	//return record idx
     for (i = 0; i < c->num_keys; i++)
-        if (c->keys[i] == key) break;
-    if (i == c->num_keys){
- 		free_node(&c);
-		return -1;
+        if (c->keys[i] == key) return i;
+	//can't find record
+	return -1;
+}
+
+node* record_lock_acquire( int table_id, pagenum_t root, int64_t key, int trx_id, int lock_mode, int& ret_idx){
+	node* c = find_leaf(table_id, root, key);
+	ret_idx = find_record(c, key);
+	//can't find leaf or record
+	if(ret_idx == -1){
+		//check NULL
+		if(c) free_node(&c);
+		return NULL;
 	}
-    else{
-		if(ret_val) strncpy(ret_val, c->pointers[i].value, 120);
-		free_node(&c);
-        return i;
+	lock_t* l = new lock_t;
+	int ret = tm->record_lock(table_id, key, trx_id, lock_mode, l);
+	switch(ret){
+		//acquire, page lock & record lock
+		case 0 :
+			break;
+		//wait
+		case 1 :
+			//release page lock
+			free_node(&c);
+			//already lock trx latch, prevent lost wake_up
+			tm->record_lock_wait(l);
+			//SLOW! TODO
+			//before find_leaf, check c is not eviction TODO
+			//c = page_to_node(pagenum), check c->pointers[ret_idx].key == key
+			c = find_leaf(table_id, root, key);
+			break;
+		//deadlock
+		case 2 :
+		default :
+			free_node(&c);
+			return NULL;
 	}
+	return c;
 }
 
 int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
-	int record_idx = find_record(table_id, root, key, NULL);
-	if(record_idx == -1) return 1;
-	if(!tm->record_lock(table_id, key, trx_id, false)) return 1;
+	
+	int record_idx;
+	//acquire shared lock
+	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 0, record_idx);
+	if(leaf == NULL) return 1;
 	printf("find succ!\n");
-	node* leaf = find_leaf(table_id, root, key);
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
-	free_node(&leaf);
 	// logging
 	tm->logging(FIND, table_id, key, NULL, trx_id);
+	free_node(&leaf);
 	return 0;
 }
 
 int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo){
 	int record_idx;
-		record_idx = find_record(table_id, root, key, NULL);
-	if(!undo){
-		if(record_idx == -1) return 1;
+	//acquire exclusive lock TODO : undo don't acquire lock
+	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
+	if(leaf == NULL) return 1;
+/*	if(!undo){
 		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
-	}
+	}*/
 	printf("update succ!\n");
-	node* leaf = find_leaf(table_id, root, key);
 	strncpy(leaf->pointers[record_idx].value, values, 120);
-	free_node(&leaf);
 	// logging
 	if(!undo) tm->logging(UPDATE, table_id, key, values, trx_id);
+	free_node(&leaf);
 	return 0;
 }
 
@@ -551,23 +581,29 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
     /* The current implementation ignores
      * duplicates.
      */
-
-    if (root && find_record(table_id, root, key, NULL) != -1)
+	
+	leaf = find_leaf(table_id, root, key);
+	int ret = find_record(leaf, key);
+    if (root && ret != -1){
+		free_node(&leaf);
         return -1;
+	}
 
     /* Case: the tree does not exist yet.
      * Start a new tree.
      */
 
-    if (root == 0) 
+    if (root == 0){
+		free_node(&leaf);
         return start_new_tree(table_id, key, value);
+	}
 
 
     /* Case: the tree already exists.
      * (Rest of function body.)
      */
 
-    leaf = find_leaf(table_id, root, key);
+//    leaf = find_leaf(table_id, root, key);
 
     /* Case: leaf has room for key and pointer.
      */
@@ -974,12 +1010,13 @@ pagenum_t delete_main(int table_id, pagenum_t root, int64_t key) {
     node * key_leaf;
     int key_record_idx;
 
-    key_record_idx = find_record(table_id, root, key, NULL);
     key_leaf = find_leaf(table_id, root, key);
+    key_record_idx = find_record(key_leaf, key);
+
     if (key_record_idx != -1 && key_leaf != NULL) {
         root = delete_entry(root, key_leaf, key, (void*)key_record_idx); 
     	return root;
     }
+	free_node(&key_leaf);
 	return -1;
 }
-
