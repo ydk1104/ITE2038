@@ -594,7 +594,7 @@ pagenum_t insert( int table_id, pagenum_t root, int64_t key, const char* value )
      */
 
     if (root == 0){
-		free_node(&leaf);
+		//leaf is NULL!
         return start_new_tree(table_id, key, value);
 	}
 
