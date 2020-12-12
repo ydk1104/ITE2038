@@ -16,7 +16,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	l->trx = &trx;
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	
-	if(trx.lock_acquired(p, l)){
+	if(trx.lock_acquired(p, lock_mode)){
 		return true;
 	}
 	
