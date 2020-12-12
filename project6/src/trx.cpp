@@ -11,6 +11,7 @@ int trxManager::trx_commit(int trx_id){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[trx_id].commit(lm);
 	trxs.erase(trx_id);
+	printf("trx_commit %d\n", trx_id);
 	return trx_id;
 }
 int trxManager::trx_abort(int trx_id){

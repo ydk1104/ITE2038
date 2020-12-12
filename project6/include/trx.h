@@ -45,7 +45,7 @@ public:
 	trx_t(int trx_id):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock){}
 	const int get_trx_id()const{return trx_id;}
 	void end(lockManager* lm){
-		for(auto i:locks) lm->lock_release(i);
+		for(auto& i:locks) lm->lock_release(i);
 	}
 	void commit(lockManager* lm){
 		end(lm);

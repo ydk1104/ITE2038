@@ -17,7 +17,8 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	
 	if(trx.lock_acquired(p, lock_mode)){
-		return true;
+		//already acquired
+		return 0;
 	}
 	
 	//trx has lock_t list because of commit
@@ -41,9 +42,9 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	}
 
 	//test
-	if(0)
+	if(1)
 	{
-		auto& i = head->next;
+		auto i = head->next;
 		printf("key : %d %ld, ", table_id, key);
 		while(i != NULL){
 			printf("%ld ", i->trx_id);
@@ -90,6 +91,7 @@ void lockManager::lock_wait(lock_t* l){
 	else{
 		//use trx_lock to prevent lost wake up
 		l->c.wait(trx_lock, [&l]{
+			printf("%d %d\n", l->trx_id, l->head);
 			auto& head = l->head;
 			//head - X1 or head - S1 - X1
 			return l == head->next ||
