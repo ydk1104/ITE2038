@@ -11,7 +11,6 @@ int trxManager::trx_commit(int trx_id){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[trx_id].commit(lm);
 	trxs.erase(trx_id);
-	printf("trx_commit %d\n", trx_id);
 	return trx_id;
 }
 int trxManager::trx_abort(int trx_id){
@@ -32,7 +31,6 @@ int trxManager::trx_abort(trx_t& trx){
 
 bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id){
 	bool flag = false;
-	printf("start dfs : %d %d\n", trx.get_trx_id(), start_id);
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
 		if(now == trxs.end()){
@@ -49,8 +47,6 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int sta
 		flag |= dfs(visited, now->second, start_id);
 		it++;
 	}
-	printf("end dfs : %d %d, ", trx.get_trx_id(), start_id);
-	printf("flag : %s\n", flag ? "true" : "false");
 	return flag;
 }
 

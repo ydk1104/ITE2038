@@ -35,6 +35,7 @@ int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mo
 	head->tail = l;
 	l->head = head;
 
+	auto temp = head->x_lock;
 	//update x_lock
 	if(lock_mode == EXCLUSIVE_LOCK){
 		head->x_cnt++;
@@ -42,7 +43,7 @@ int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mo
 	}
 
 	//test
-	if(1)
+	if(0)
 	{
 		auto i = head->next;
 		printf("key : %d %ld, ", table_id, key);
@@ -70,6 +71,7 @@ int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mo
 	}
 	//detect dead_lock
 	if(tm->is_dead_lock(trx)){
+		head->x_lock = temp;
 		return 2;
 	}
 	//prevent lost wake up
@@ -80,7 +82,6 @@ int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mo
 
 void lockManager::lock_wait(lock_t* l){
 	std::unique_lock<std::mutex>& trx_lock = l->trx->get_trx_lock();
-	printf("unique_lock : %p %d\n", &trx_lock, l->trx_id);
 	//if lock_mode == shared, check x lock
 	if(l->lock_mode == SHARED_LOCK){
 		int cnt = 0;
@@ -92,7 +93,6 @@ void lockManager::lock_wait(lock_t* l){
 	else{
 		//use trx_lock to prevent lost wake up
 		l->c.wait(trx_lock, [&l]{
-			printf("in wait : %d %p\n", l->trx_id, l->head);
 			auto& head = l->head;
 			//head - X1 or head - S1 - X1
 			return l == head->next ||
