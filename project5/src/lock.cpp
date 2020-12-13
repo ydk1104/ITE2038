@@ -16,8 +16,9 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	l->trx = &trx;
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	
-	if(trx.lock_acquired(p, l)){
-		return true;
+	if(trx.lock_acquired(p, lock_mode)){
+		//already acquired
+		return 0;
 	}
 	
 	//trx has lock_t list because of commit
@@ -43,19 +44,15 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 	//test
 	if(0)
 	{
-		auto& i = head->next;
+		auto i = head->next;
 		printf("key : %d %ld, ", table_id, key);
 		while(i != NULL){
-			printf("%ld ", i->trx_id);
+			printf("%d ", i->trx_id);
 			i = i->next;
 		}
 		printf("\n");
 	}
 	
-	//if lock_mode == exclusive, check no lock
-	if(l != head->next){
-		return 0;
-	}
 	if(l->lock_mode == SHARED_LOCK){
 		//if lock_mode == shared, check x lock
 		if(head->x_cnt == 0) return 0;
@@ -63,6 +60,8 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		trx.add_edge(head->x_lock->trx_id);
 	}
 	else{
+		//if lock_mode == exclusive, check no lock
+		if(l == head->next) return 0;
 		//add edge at front s locks, one x lock
 		for(lock_t* i = l->prev; i != head; i = i->prev){
 			trx.add_edge(i->trx_id);
@@ -81,6 +80,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 
 void lockManager::lock_wait(lock_t* l){
 	std::unique_lock<std::mutex>& trx_lock = l->trx->get_trx_lock();
+	printf("unique_lock : %p %d\n", &trx_lock, l->trx_id);
 	//if lock_mode == shared, check x lock
 	if(l->lock_mode == SHARED_LOCK){
 		int cnt = 0;
@@ -92,6 +92,7 @@ void lockManager::lock_wait(lock_t* l){
 	else{
 		//use trx_lock to prevent lost wake up
 		l->c.wait(trx_lock, [&l]{
+			printf("in wait : %d %p\n", l->trx_id, l->head);
 			auto& head = l->head;
 			//head - X1 or head - S1 - X1
 			return l == head->next ||
@@ -108,6 +109,7 @@ void lockManager::lock_release(lock_t* lock_obj){
 	if(lock_obj == NULL) return;
 	std::unique_lock<std::mutex> lock(lock_manager_latch);
 	lock_t *head = lock_obj->head, *next = lock_obj->next;
+//	printf("%p %p %d\n", head, next, next ? next->trx_id : 0);
 /* case : 4
  * 1. S->S. impossible
  * 2. S->X. notify if head->S->X or head->S1->S2->X1
@@ -123,6 +125,8 @@ void lockManager::lock_release(lock_t* lock_obj){
 			{
 			lock_t* i = next;
 			while(i){
+				//need
+				std::unique_lock<std::mutex> temp(i->trx->get_trx_mutex());
 				// 1 + 3
 				// 2 + 4
 				// + head-{release S1}-S2-L2
