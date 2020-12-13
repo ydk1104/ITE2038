@@ -72,9 +72,9 @@ bool trxManager::find(int trx_id){
 	return trxs.find(trx_id) != trxs.end();
 }
 
-void trxManager::logging(int type, int table_id, int64_t key, char* value, int trx_id){
+void trxManager::logging(int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
-	trxs[trx_id].add_log(type, table_id, key, value);
+	trxs[trx_id].add_log(type, table_id, pageNum, offset, old_image, new_image);
 }
 
 trx_t& trxManager::operator [](int trx_id){
