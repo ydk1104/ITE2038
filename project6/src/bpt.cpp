@@ -174,6 +174,7 @@ node* record_lock_acquire( int table_id, pagenum_t root, int64_t key, int trx_id
 	}
 	lock_t* l = new lock_t;
 	int ret = tm->record_lock(table_id, key, trx_id, lock_mode, l);
+	printf("ret : %d\n", ret);
 	switch(ret){
 		//acquire, page lock & record lock
 		case 0 :
@@ -203,6 +204,7 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 	int record_idx;
 	//acquire shared lock
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 0, record_idx);
+	printf("%p\n", leaf);
 	if(leaf == NULL) return 1;
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
 	// logging
@@ -215,6 +217,7 @@ int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id,
 	int record_idx;
 	//acquire exclusive lock TODO : undo don't acquire lock
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
+	printf("%p\n", leaf);
 	if(leaf == NULL) return 1;
 /*	if(!undo){
 		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;

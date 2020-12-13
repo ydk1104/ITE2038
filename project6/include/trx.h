@@ -89,6 +89,7 @@ public:
 	void lock(){trx_lock.lock();}
 	void unlock(){trx_lock.unlock();}
 	std::unique_lock<std::mutex>& get_trx_lock(){return trx_lock;}
+	std::mutex& get_trx_mutex(){return trx_latch;}
 };
 
 class trxManager{
@@ -105,7 +106,7 @@ public:
 	int trx_abort(trx_t& trx);
 	bool dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id);
 	bool is_dead_lock(trx_t& trx);
-	bool record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l);
+	int record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l);
 	void record_lock_wait(lock_t* l);
 	bool find(int trx_id);
 	void logging(int type, int table_id, int64_t key, char* value, int trx_id);

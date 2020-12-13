@@ -2,7 +2,7 @@
 #include<trx.h>
 
 lockManager::lockManager(trxManager* tm):tm(tm){}
-bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode, std::mutex& trx_manager_latch, lock_t* l){
+int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode, std::mutex& trx_manager_latch, lock_t* l){
 	std::unique_lock<std::mutex> trx_lock(trx_manager_latch);
 	auto& trx = (*tm)[trx_id];
 	//if trx already acquire lock,
@@ -47,7 +47,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 		auto i = head->next;
 		printf("key : %d %ld, ", table_id, key);
 		while(i != NULL){
-			printf("%ld ", i->trx_id);
+			printf("%d ", i->trx_id);
 			i = i->next;
 		}
 		printf("\n");
@@ -80,6 +80,7 @@ bool lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_m
 
 void lockManager::lock_wait(lock_t* l){
 	std::unique_lock<std::mutex>& trx_lock = l->trx->get_trx_lock();
+	printf("unique_lock : %p %d\n", &trx_lock, l->trx_id);
 	//if lock_mode == shared, check x lock
 	if(l->lock_mode == SHARED_LOCK){
 		int cnt = 0;
@@ -91,7 +92,7 @@ void lockManager::lock_wait(lock_t* l){
 	else{
 		//use trx_lock to prevent lost wake up
 		l->c.wait(trx_lock, [&l]{
-			printf("%d %d\n", l->trx_id, l->head);
+			printf("in wait : %d %p\n", l->trx_id, l->head);
 			auto& head = l->head;
 			//head - X1 or head - S1 - X1
 			return l == head->next ||
@@ -123,6 +124,8 @@ void lockManager::lock_release(lock_t* lock_obj){
 			{
 			lock_t* i = next;
 			while(i){
+				//need
+				std::unique_lock<std::mutex> temp(i->trx->get_trx_mutex());
 				// 1 + 3
 				// 2 + 4
 				// + head-{release S1}-S2-L2

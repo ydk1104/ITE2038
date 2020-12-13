@@ -32,6 +32,7 @@ int trxManager::trx_abort(trx_t& trx){
 
 bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id){
 	bool flag = false;
+	printf("start dfs : %d %d\n", trx.get_trx_id(), start_id);
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
 		if(now == trxs.end()){
@@ -48,6 +49,8 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int sta
 		flag |= dfs(visited, now->second, start_id);
 		it++;
 	}
+	printf("end dfs : %d %d, ", trx.get_trx_id(), start_id);
+	printf("flag : %s\n", flag ? "true" : "false");
 	return flag;
 }
 
@@ -56,7 +59,7 @@ bool trxManager::is_dead_lock(trx_t& trx){
 	visited[trx.get_trx_id()] = true;
 	return dfs(visited, trx, trx.get_trx_id());
 }
-bool trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l){
+int trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l){
 	return lm->lock_acquire(table_id, key, trx_id, is_write ? EXCLUSIVE_LOCK : SHARED_LOCK, trx_manager_latch, l);
 }
 
