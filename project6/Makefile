@@ -19,6 +19,7 @@ SRCS_FOR_LIB:= \
 	$(SRCDIR)bpt.cpp \
 	$(SRCDIR)buffer.cpp \
 	$(SRCDIR)file.cpp \
+	$(SRCDIR)log.cpp \
 	$(SRCDIR)trx.cpp \
 	$(SRCDIR)lock.cpp \
 	$(SRCDIR)db.cpp
