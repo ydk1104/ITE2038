@@ -80,10 +80,6 @@ public:
 	compensate_update_info_t();
 };
 
-class info_t_factory{
-public:
-};
-
 class logManager{
 private:
 	buffer;
