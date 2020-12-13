@@ -76,15 +76,15 @@ int db_update (int table_id, int64_t key, char * values, int trx_id){
 	page_t* header = get_header_ptr(table_id, true);
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
-	int idx = update(table_id, rootPageNum, key, values, trx_id, false);
+	int idx = update(table_id, rootPageNum, key, values, trx_id);
 	if(idx != 0) return tm->trx_abort(trx_id);
 	return 0;
 }
 int db_undo_update (int table_id, int64_t key, char * old_values, int trx_id){
-	page_t* header = get_header_ptr(table_id, true);
-	pagenum_t rootPageNum = header->data.header.rootPageNum;
-	header->unlock();
-	update(table_id, rootPageNum, key, old_values, trx_id, true);
+	//page_t* header = get_header_ptr(table_id, true);
+	//pagenum_t rootPageNum = header->data.header.rootPageNum;
+	//header->unlock();
+	//update(table_id, rootPageNum, key, old_values, trx_id, true);
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base

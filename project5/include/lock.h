@@ -22,7 +22,7 @@ private:
 	trxManager* tm;
 public:
 	lockManager(trxManager* tm);	
-	bool lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode, std::mutex& trx_manager_latch, lock_t* l);
+	int lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode, std::mutex& trx_manager_latch, lock_t* l);
 	void lock_wait(lock_t* l);
 	void lock_release(lock_t* lock_obj);
 };

@@ -11,7 +11,6 @@
 #include<sys/stat.h>
 #include<stdbool.h>
 #include<unistd.h>
-typedef uint64_t pagenum_t;
 
 struct page_t{
 // in-memory page structure

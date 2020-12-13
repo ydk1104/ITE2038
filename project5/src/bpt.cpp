@@ -205,23 +205,17 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 0, record_idx);
 	if(leaf == NULL) return 1;
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
-	// logging
-	tm->logging(FIND, table_id, key, NULL, trx_id);
 	free_node(&leaf);
 	return 0;
 }
 
-int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo){
+int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id){
 	int record_idx;
-	//acquire exclusive lock TODO : undo don't acquire lock
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
 	if(leaf == NULL) return 1;
-/*	if(!undo){
-		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
-	}*/
 	strncpy(leaf->pointers[record_idx].value, values, 120);
 	// logging
-	if(!undo) tm->logging(UPDATE, table_id, key, values, trx_id);
+	tm->logging(trx_id, UPDATE, table_id, leaf->pagenum, 0, leaf->pointers[record_idx].value, values);
 	node_to_page(&leaf, true);
 	return 0;
 }

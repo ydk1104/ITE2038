@@ -11,7 +11,6 @@ int trxManager::trx_commit(int trx_id){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[trx_id].commit(lm);
 	trxs.erase(trx_id);
-	printf("trx_commit %d\n", trx_id);
 	return trx_id;
 }
 int trxManager::trx_abort(int trx_id){
@@ -56,7 +55,7 @@ bool trxManager::is_dead_lock(trx_t& trx){
 	visited[trx.get_trx_id()] = true;
 	return dfs(visited, trx, trx.get_trx_id());
 }
-bool trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l){
+int trxManager::record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l){
 	return lm->lock_acquire(table_id, key, trx_id, is_write ? EXCLUSIVE_LOCK : SHARED_LOCK, trx_manager_latch, l);
 }
 
@@ -69,9 +68,9 @@ bool trxManager::find(int trx_id){
 	return trxs.find(trx_id) != trxs.end();
 }
 
-void trxManager::logging(int type, int table_id, int64_t key, char* value, int trx_id){
+void trxManager::logging(int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
-	trxs[trx_id].add_log(type, table_id, key, value);
+	trxs[trx_id].add_log(type, table_id, pageNum, offset, old_image, new_image);
 }
 
 trx_t& trxManager::operator [](int trx_id){
