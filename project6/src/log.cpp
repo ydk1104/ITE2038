@@ -16,17 +16,15 @@ void info_t::read(char* data_ptr){
 // override
 void info_t::redo(){}
 void info_t::undo(){}
+info_t::~info_t(){}
 
 operator_info_t::operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image):
 	info_t(log_size, lsn, prev_lsn, trx_id, type),
-	table_id(table_id), pageNum(pageNum), offset(offset), data_length(data_length), old_image(new char[data_length]), new_image(new char[data_length]){
-		memcpy(this->old_image, old_image, data_length);
-		memcpy(this->new_image, new_image, data_length);
+	table_id(table_id), pageNum(pageNum), offset(offset), data_length(data_length){
+		memcpy(&this->old_image, old_image, data_length);
+		memcpy(&this->new_image, new_image, data_length);
 	}
-operator_info_t::~operator_info_t(){
-	delete[] old_image;
-	delete[] new_image;
-}
+operator_info_t::~operator_info_t(){}
 
 //physical redo & undo
 //interact with buffer manger

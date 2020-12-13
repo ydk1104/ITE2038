@@ -39,6 +39,7 @@ public:
 	void read(char*);
 	virtual void redo();
 	virtual void undo();
+	virtual ~info_t();
 };
 
 class operator_info_t:public info_t{
@@ -47,14 +48,14 @@ private:
 	pagenum_t pageNum;
 	int32_t offset;
 	int32_t data_length;
-	char* old_image;
-	char* new_image;
+	char old_image[120];
+	char new_image[120];
 public:
 	operator_info_t(char* data);
 	operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image);
 	void redo();
 	void undo();
-	~operator_info_t();
+	virtual ~operator_info_t();
 };
 
 
