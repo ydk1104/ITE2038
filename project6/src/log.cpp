@@ -1,7 +1,7 @@
 #include "log.h"
 
 info_t::info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type):
-		log_size(log_size),lsn(prev_lsn),trx_id(trx_id),type(type){}
+	log_size(log_size),lsn(prev_lsn),trx_id(trx_id),type(type){}
 
 void info_t::write(char* data_ptr){
 	memcpy(data_ptr, this, log_size);
@@ -11,15 +11,36 @@ void info_t::read(char* data_ptr){
 	memcpy(this, data_ptr, log_size);
 }
 
-begin_info_t::begin_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):info_t(sizeof(*this), lsn, prev_lsn, trx_id, BEGIN){}
+operator_info_t::operator_info_t(int32_t log_size, int64_t lsn, int32_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length):
+	info_t(log_size, lsn, prev_lsn, trx_id, type),table_id(table_id, pageNum(pageNum), offset(offset), data_length(data_length), old_image(*old_image), new_image(*new_image){}
 
-update_info_t::update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):info_t(sizeof(*this), lsn, prev_lsn, trx_id, UPDATE){}
+//physical redo & undo
+void operator_info_t::redo(){
+//	get_page(table_id, pageNum);
+//	memcpy(page->data[offset], new_image, data_length);
+}
 
-commit_info_t::commit_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):info_t(sizeof(*this), lsn, prev_lsn, trx_id, COMMIT){}
+void operator_info_t::undo(){
+//	get_page(table_id, pageNum);
+//	memcpy(page->data[offset], new_image, data_length);
+}
 
-rollback_info_t::rollback_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):info_t(sizeof(*this), lsn, prev_lsn, trx_id, ROLLBACK){}
+begin_info_t::begin_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):
+	info_t(sizeof(*this), lsn, prev_lsn, trx_id, BEGIN){}
 
-compensate_update_info_t::update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int64_t next_undo_lsn):info_t(sizeof(*this), lsn, prev_lsn, trx_id, COMPENSATE_UPDATE), next_undo_lsn(next_undo_lsn){}
+update_info_t::update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, ):
+	operator_info_t(sizeof(*this), lsn, prev_lsn, trx_id, UPDATE,){}
+
+commit_info_t::commit_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):
+	info_t(sizeof(*this), lsn, prev_lsn, trx_id, COMMIT){}
+
+rollback_info_t::rollback_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):
+	info_t(sizeof(*this), lsn, prev_lsn, trx_id, ROLLBACK){}
+
+compensate_update_info_t::update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int64_t next_undo_lsn):
+	update_info_t(lsn, prev_lsn, trx_id, next_undo_lsn(next_undo_lsn){
+		log_size = sizeof(*this); type = COMPENSATE_UPDATE;
+	}
 
 static info_t* logManager::make_info_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
 	switch(type){

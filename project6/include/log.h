@@ -42,8 +42,12 @@ private:
 	pagenumt_t pagenNum;
 	int32_t offset;
 	int32_t data_length;
+	record old_image;
+	record new_image;
 public:
-	operator_info_t(int32_t log_size, int64_t lsn, int32_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length);
+	operator_info_t(int32_t log_size, int64_t lsn, int32_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, record* old_image, record* new_image);
+	void redo();
+	void undo();
 };
 
 
@@ -64,13 +68,11 @@ public:
 
 class update_info_t:public operator_info_t{
 private:
-	record old_image;
-	record new_image;
 public:
 	update_log_t();
 };
 
-class compensate_update_info_t:public update_info_t{
+class compensate_info_t:public operator_info_t{
 private:
 	int32_t next_undo_lsn;
 public:
