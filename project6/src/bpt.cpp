@@ -207,18 +207,23 @@ int find( int table_id, pagenum_t root, int64_t key, char* ret_val, int trx_id){
 	printf("%p\n", leaf);
 	if(leaf == NULL) return 1;
 	strncpy(ret_val, leaf->pointers[record_idx].value, 120);
-	// logging
-	tm->logging(FIND, table_id, key, NULL, trx_id);
 	free_node(&leaf);
 	return 0;
 }
 
 int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id, bool undo){
 	int record_idx;
+	node* leaf;
 	//acquire exclusive lock TODO : undo don't acquire lock
-	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
-	printf("%p\n", leaf);
-	if(leaf == NULL) return 1;
+	if(!undo){
+		leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
+		printf("%p\n", leaf);
+		if(leaf == NULL) return 1;
+	}
+	else{
+		leaf = find_leaf(table_id, root, key);
+		record_idx = find_record(leaf, key);
+	}
 /*	if(!undo){
 		if(!tm->record_lock(table_id, key, trx_id, true)) return 1;
 	}*/

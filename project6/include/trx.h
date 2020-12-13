@@ -2,6 +2,7 @@
 #define __TRX__
 
 #include<lock.h>
+#include<log.h>
 #include<db.h>
 #include<list>
 #include<memory>
@@ -16,28 +17,7 @@ private:
 	std::vector<lock_t*> locks;
 	std::mutex trx_latch;
 	std::unique_lock<std::mutex> trx_lock;
-	class log_t{
-	private:
-		int type;
-		int table_id;
-		int64_t key;
-		int trx_id;
-		std::shared_ptr<record> value;
-	public:
-		log_t(int type, int table_id, int key, int trx_id, char* value):
-				type(type), table_id(table_id), key(key), trx_id(trx_id), value(value ? std::shared_ptr<record>(new record(value)) : NULL){}
-		void undo(){
-			switch(type){
-				case UPDATE :
-					db_undo_update(table_id, key, value->value, trx_id);
-					break;
-				case FIND :
-				default:
-					break;
-			}
-		}
-	};
-	std::vector<log_t> logs;
+	std::vector<log_t*> logs;
 	std::unordered_map<std::pair<int, int64_t>, int, my_hash> acquired_lock;
 	bool aborted = false;
 public:
@@ -53,13 +33,12 @@ public:
 	void abort(lockManager* lm){
 		aborted = true;
 		for(auto& i:logs){
-			i.undo();
+			i->undo();
 		}
 		end(lm);
 	}
 	void add_log(int type, int table_id, int64_t key, char* value){
-		if(!aborted)
-			logs.emplace_back(type, table_id, key, trx_id, value);
+		logs.emplace_back(nullptr);
 	}
 	void add_edge(int x){
 		if(x==trx_id) return; // self loop is an-available;

@@ -3,7 +3,7 @@
 
 #include"type.h"
 
-#pragma pack(push, 1);
+#pragma pack(push, 1)
 
 enum{
 	BEGIN,
@@ -21,6 +21,8 @@ private:
 	char* data_ptr;
 public:
 	log_t(info_t* info);
+	void redo();
+	void undo();
 };
 
 class info_t{
@@ -33,21 +35,23 @@ private:
 public:
 	info_t(char* data);
 	info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type);
-	void write();
-	void read();
+	void write(char*);
+	void read(char*);
+	virtual void redo();
+	virtual void undo();
 };
 
 class operator_info_t:public info_t{
 private:
 	int32_t table_id;
-	pagenumt_t pagenNum;
+	pagenum_t pageNum;
 	int32_t offset;
 	int32_t data_length;
 	record old_image;
 	record new_image;
 public:
 	operator_info_t(char* data);
-	operator_info_t(int32_t log_size, int64_t lsn, int32_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, record* old_image, record* new_image);
+	operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, record* old_image, record* new_image);
 	void redo();
 	void undo();
 };
@@ -70,27 +74,27 @@ public:
 
 class update_info_t:public operator_info_t{
 public:
-	update_log_t();
+	update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, record* old_image, record* new_image);
 };
 
-class compensate_info_t:public operator_info_t{
+class compensate_update_info_t:public operator_info_t{
 private:
 	int32_t next_undo_lsn;
 public:
-	compensate_update_info_t();
+	compensate_update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, record* old_image, record* new_image, int64_t next_undo_lsn);
 };
 
 class logManager{
 private:
-	buffer;
-	log_t* log;
+//	bufferManager* bm;
 	int64_t lsn;
 public:
-	static log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type);
-	static log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, record* old_image, record* new_image);
-	static log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, record* old_image, record* new_image, int64_t next_undo_lsn);
+	logManager();
+	log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type);
+	log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, record* old_image, record* new_image);
+	log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, record* old_image, record* new_image, int64_t next_undo_lsn);
 };
 
-#pragma pack(pop);
+#pragma pack(pop)
 
 #endif

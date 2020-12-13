@@ -25,10 +25,7 @@ enum{
 	EXCLUSIVE_LOCK,
 };
 
-enum{
-	FIND,
-	UPDATE,
-};
+using pagenum_t = uint64_t;
 
 struct record{
 	char value[120];
