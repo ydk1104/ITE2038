@@ -24,23 +24,27 @@ private:
 	bool aborted = false;
 public:
 	trx_t():trx_t(0, nullptr){}
-	trx_t(int trx_id, logManager* lm):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock),lm(lm){}
+	trx_t(int trx_id, logManager* lm):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock),lm(lm){add_log(BEGIN);}
 	const int get_trx_id()const{return trx_id;}
-	void end(lockManager* lm){
+	void end(lockManager* lm, int32_t type){
 		for(auto& i:locks) lm->lock_release(i);
+		add_log(type);
 	}
 	void commit(lockManager* lm){
-		end(lm);
+		end(lm, COMMIT);
 	}
 	void abort(lockManager* lm, bufferManager* bm){
 		aborted = true;
 		for(auto& i:logs){
 			i->undo(bm);
 		}
-		end(lm);
+		end(lm, ROLLBACK);
+	}
+	void add_log(int32_t type){
+		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type));
+		prev_lsn = logs.back()->get_lsn();
 	}
 	void add_log(int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
-//		logs.emplace_back(NULL);
 		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type, table_id, pageNum, offset, old_image, new_image));
 		prev_lsn = logs.back()->get_lsn();
 	}
