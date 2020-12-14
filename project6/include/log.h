@@ -21,8 +21,12 @@ private:
 	char* data_ptr;
 public:
 	log_t(info_t* info);
-	void redo();
-	void undo();
+	void redo(bufferManager* bm);
+	void undo(bufferManager* bm);
+	int64_t get_lsn();
+	int64_t get_prev_lsn();
+	int32_t get_trx_id();
+	int32_t get_type();
 };
 
 class info_t{
@@ -37,8 +41,12 @@ public:
 	info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type);
 	void write(char*);
 	void read(char*);
-	virtual void redo();
-	virtual void undo();
+	int64_t get_lsn();
+	int64_t get_prev_lsn();
+	int32_t get_trx_id();
+	int32_t get_type();
+	virtual void redo(bufferManager* bm);
+	virtual void undo(bufferManager* bm);
 	virtual ~info_t();
 };
 
@@ -53,8 +61,8 @@ private:
 public:
 	operator_info_t(char* data);
 	operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image);
-	void redo();
-	void undo();
+	void redo(bufferManager* bm);
+	void undo(bufferManager* bm);
 	virtual ~operator_info_t();
 };
 

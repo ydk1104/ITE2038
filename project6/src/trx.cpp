@@ -1,10 +1,12 @@
 #include"trx.h"
 
-trxManager::trxManager():lm(new lockManager(this)){}
+trxManager::trxManager(logManager* logMng):lm(new lockManager(this)),logMng(logMng){}
 int trxManager::trx_begin(void){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	++trx_cnt;
-	trxs.emplace(trx_cnt, trx_cnt);
+	trxs.emplace(std::piecewise_construct,
+				 std::forward_as_tuple(trx_cnt),
+				 std::forward_as_tuple(trx_cnt, logMng));
 	return trx_cnt;
 }
 int trxManager::trx_commit(int trx_id){
@@ -13,20 +15,18 @@ int trxManager::trx_commit(int trx_id){
 	trxs.erase(trx_id);
 	return trx_id;
 }
-int trxManager::trx_abort(int trx_id){
+int trxManager::trx_abort(int trx_id, bufferManager* bm){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
-	trxs[trx_id].abort(lm);
+	trxs[trx_id].abort(lm, bm);
 	trxs.erase(trx_id);
-	return 1;
-//	return trx_id;
+	return trx_id;
 }
-int trxManager::trx_abort(trx_t& trx){
+int trxManager::trx_abort(trx_t& trx, bufferManager* bm){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
-	trx.abort(lm);
+	trx.abort(lm, bm);
 	int trx_id = trx.get_trx_id();
 	trxs.erase(trx_id);
-	return 1;
-//	return trx_id;
+	return trx_id;
 }
 
 bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id){

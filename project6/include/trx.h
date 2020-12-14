@@ -18,11 +18,13 @@ private:
 	std::mutex trx_latch;
 	std::unique_lock<std::mutex> trx_lock;
 	std::vector<log_t*> logs;
+	logManager* lm;
+	int64_t prev_lsn;
 	std::unordered_map<std::pair<int, int64_t>, int, my_hash> acquired_lock;
 	bool aborted = false;
 public:
-	trx_t():trx_t(0){}
-	trx_t(int trx_id):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock){}
+	trx_t():trx_t(0, nullptr){}
+	trx_t(int trx_id, logManager* lm):trx_id(trx_id),trx_lock(trx_latch, std::defer_lock),lm(lm){}
 	const int get_trx_id()const{return trx_id;}
 	void end(lockManager* lm){
 		for(auto& i:locks) lm->lock_release(i);
@@ -30,16 +32,17 @@ public:
 	void commit(lockManager* lm){
 		end(lm);
 	}
-	void abort(lockManager* lm){
+	void abort(lockManager* lm, bufferManager* bm){
 		aborted = true;
 		for(auto& i:logs){
-			i->undo();
+			i->undo(bm);
 		}
 		end(lm);
 	}
 	void add_log(int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 //		logs.emplace_back(NULL);
-		//logs.emplace_back(lm->make_log_t(trx_id, type, table_id, pageNum, offset, old_image, new_image);
+		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type, table_id, pageNum, offset, old_image, new_image));
+		prev_lsn = logs.back()->get_lsn();
 	}
 	void add_edge(int x){
 		if(x==trx_id) return; // self loop is an-available;
@@ -76,13 +79,14 @@ private:
 	std::unordered_map<int, trx_t> trxs;
 	int trx_cnt;
 	lockManager *lm;
+	logManager *logMng;
 	std::mutex trx_manager_latch;
 public:
-	trxManager();
+	trxManager(logManager* logMng);
 	int trx_begin(void);
 	int trx_commit(int trx_id);
-	int trx_abort(int trx_id);
-	int trx_abort(trx_t& trx);
+	int trx_abort(int trx_id, bufferManager* bm);
+	int trx_abort(trx_t& trx, bufferManager* bm);
 	bool dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int start_id);
 	bool is_dead_lock(trx_t& trx);
 	int record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l);

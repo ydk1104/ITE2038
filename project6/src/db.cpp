@@ -4,11 +4,15 @@
 
 char* pathname_to_table_id[TABLE_SIZE];
 int open_table_cnt;
+static bufferManager *bm;
+static logManager *lm;
 static trxManager *tm;
 
 int init_db (int buf_num){
-	tm = new trxManager;
-	return init_bpt(buf_num, tm);
+	bm = new bufferManager(buf_num);
+	lm = new logManager;
+	tm = new trxManager(lm);
+	return init_bpt(bm, tm);
 }
 
 int trx_begin(void){
@@ -65,7 +69,7 @@ int db_find (int table_id, int64_t key, char * ret_val, int trx_id){
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
 	int idx = find(table_id, rootPageNum, key, ret_val, trx_id);
-	if(idx != 0) return tm->trx_abort(trx_id);
+	if(idx != 0) return tm->trx_abort(trx_id, bm);
 	return 0;
 }
 //in db, table_id is 0 base, but input is 1 base
@@ -77,7 +81,7 @@ int db_update (int table_id, int64_t key, char * values, int trx_id){
 	pagenum_t rootPageNum = header->data.header.rootPageNum;
 	header->unlock();
 	int idx = update(table_id, rootPageNum, key, values, trx_id);
-	if(idx != 0) return tm->trx_abort(trx_id);
+	if(idx != 0) return tm->trx_abort(trx_id, bm);
 	return 0;
 }
 int db_undo_update (int table_id, int64_t key, char * old_values, int trx_id){

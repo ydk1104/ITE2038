@@ -164,7 +164,7 @@ extern bool verbose_output;
 // FUNCTION PROTOTYPES.
 
 // layer.
-int init_bpt(int buf_num, trxManager* tm);
+int init_bpt(bufferManager* bm, trxManager* tm);
 int close_buffer(int table_id);
 int shutdown_buffer(void);
 int file_open(char* pathname);

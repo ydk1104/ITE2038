@@ -1,7 +1,8 @@
+#include "buffer.h"
 #include "log.h"
 
 info_t::info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type):
-	log_size(log_size),lsn(prev_lsn),trx_id(trx_id),type(type){}
+	log_size(log_size),lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d\n", type);}
 
 //write to / read from buffer
 void info_t::write(char* data_ptr){
@@ -12,10 +13,22 @@ void info_t::read(char* data_ptr){
 	int log_size = *(int*)data_ptr;
 	memcpy(this, data_ptr, log_size);
 }
+int64_t info_t::get_lsn(){
+	return lsn;
+}
+int64_t info_t::get_prev_lsn(){
+	return prev_lsn;
+}
+int32_t info_t::get_trx_id(){
+	return trx_id;
+}
+int32_t info_t::get_type(){
+	return type;
+}
 
 // override
-void info_t::redo(){}
-void info_t::undo(){}
+void info_t::redo(bufferManager* bm){}
+void info_t::undo(bufferManager* bm){}
 info_t::~info_t(){}
 
 operator_info_t::operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image):
@@ -28,14 +41,20 @@ operator_info_t::~operator_info_t(){}
 
 //physical redo & undo
 //interact with buffer manger
-void operator_info_t::redo(){
+void operator_info_t::redo(bufferManager* bm){
 //	get_page(table_id, pageNum);
 //	memcpy(page->data[offset], new_image, data_length);
 }
 
-void operator_info_t::undo(){
-//	get_page(table_id, pageNum);
-//	memcpy(page->data[offset], old_image, data_length);
+void operator_info_t::undo(bufferManager* bm){
+	node* n = NULL;
+	//get page lock
+	//it is useless in out project spec - we already get record_lock, record ptr doesn't move
+	bm->page_to_node(table_id, pageNum, &n);
+	char* ptr = (char*)n->buffer_ptr;
+	ptr += offset;
+	memcpy(ptr, old_image, data_length);
+	bm->node_to_page(&n, true);
 }
 
 begin_info_t::begin_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):
@@ -59,12 +78,28 @@ compensate_update_info_t::compensate_update_info_t(int64_t lsn, int64_t prev_lsn
 //log	
 log_t::log_t(info_t* info):info(info){}
 
-void log_t::redo(){
-	return info->redo();
+void log_t::redo(bufferManager* bm){
+	return info->redo(bm);
 }
 
-void log_t::undo(){
-	return info->undo();
+void log_t::undo(bufferManager* bm){
+	return info->undo(bm);
+}
+
+int64_t log_t::get_lsn(){
+	return info->get_lsn();
+}
+
+int64_t log_t::get_prev_lsn(){
+	return info->get_prev_lsn();
+}
+
+int32_t log_t::get_trx_id(){
+	return info->get_trx_id();
+}
+
+int32_t log_t::get_type(){
+	return info->get_type();
 }
 
 //logManager

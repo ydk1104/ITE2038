@@ -78,9 +78,9 @@ bool verbose_output = false;
 bufferManager* bm;
 trxManager* tm;
 
-int init_bpt(int buf_num, trxManager* tm_ptr){
+int init_bpt(bufferManager* bm_ptr, trxManager* tm_ptr){
+	bm = bm_ptr;
 	tm = tm_ptr;
-	bm = new bufferManager(buf_num);
 	return 0;
 }
 
@@ -213,9 +213,12 @@ int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id)
 	int record_idx;
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
 	if(leaf == NULL) return 1;
-	strncpy(leaf->pointers[record_idx].value, values, 120);
 	// logging
-	tm->logging(trx_id, UPDATE, table_id, leaf->pagenum, 0, leaf->pointers[record_idx].value, values);
+	tm->logging(trx_id, UPDATE, table_id, leaf->pagenum, 
+				((uint64_t)&(leaf->pointers[record_idx].value) -
+				(uint64_t)leaf->buffer_ptr) % PAGE_SIZE,
+					leaf->pointers[record_idx].value, values);
+	strncpy(leaf->pointers[record_idx].value, values, 120);
 	node_to_page(&leaf, true);
 	return 0;
 }
