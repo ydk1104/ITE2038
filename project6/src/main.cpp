@@ -167,7 +167,7 @@ void test(TEST test){
 
 int my_main(){
     const int buff_size = 10000;
-    init_db(buff_size);
+    init_db(buff_size, 0, 0, nullptr, nullptr);
     TEST type = TEST_DISK_FIND;
     test(type);
     shutdown_db();

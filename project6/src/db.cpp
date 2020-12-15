@@ -8,7 +8,7 @@ static bufferManager *bm;
 static logManager *lm;
 static trxManager *tm;
 
-int init_db (int buf_num){
+int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_path){
 	bm = new bufferManager(buf_num);
 	lm = new logManager;
 	tm = new trxManager(lm);
