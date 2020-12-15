@@ -33,7 +33,7 @@ bool trxManager::dfs(std::unordered_map<int, bool>& visited, trx_t& trx, int sta
 	bool flag = false;
 	for(auto it = trx.begin(); it != trx.end();){
 		auto now = trxs.find(*it);
-		if(now == trxs.end()){
+		if(now == trxs.end() || now->second.isAbort()){
 			trx.erase(it++);
 			continue;
 		}
