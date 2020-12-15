@@ -60,7 +60,7 @@ int lockManager::lock_acquire(int table_id, int64_t key, int trx_id, int lock_mo
 		//add edge at last x lock
 		//trx.add_edge(head->x_lock->trx_id);
 		for(lock_t* i = l->head; i != l; i = i->next){
-			if(i->lock_mode == EXCLUESIVE_LOCK) trx.add_edge(i->trx_id);
+			if(i->lock_mode == EXCLUSIVE_LOCK) trx.add_edge(i->trx_id);
 		}
 	}
 	else{
