@@ -74,7 +74,6 @@ public:
 	}
 	void lock(){trx_lock.lock();}
 	void unlock(){trx_lock.unlock();}
-	bool isAbort(){return aborted;}
 	std::unique_lock<std::mutex>& get_trx_lock(){return trx_lock;}
 	std::mutex& get_trx_mutex(){return trx_latch;}
 };
