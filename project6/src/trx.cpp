@@ -12,20 +12,20 @@ int trxManager::trx_begin(void){
 int trxManager::trx_commit(int trx_id){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[trx_id].commit(lm);
-	trxs.erase(trx_id);
+//	trxs.erase(trx_id);
 	return trx_id;
 }
 int trxManager::trx_abort(int trx_id, bufferManager* bm){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trxs[trx_id].abort(lm, bm);
-	trxs.erase(trx_id);
+//	trxs.erase(trx_id);
 	return trx_id;
 }
 int trxManager::trx_abort(trx_t& trx, bufferManager* bm){
 	std::unique_lock<std::mutex> lock(trx_manager_latch);
 	trx.abort(lm, bm);
 	int trx_id = trx.get_trx_id();
-	trxs.erase(trx_id);
+//	trxs.erase(trx_id);
 	return trx_id;
 }
 
