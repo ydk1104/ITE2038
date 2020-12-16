@@ -46,7 +46,7 @@ void operator_info_t::redo(bufferManager* bm){
 	bm->page_to_node(table_id, pageNum, &n);
 	char* ptr = (char*)n->buffer_ptr;
 	ptr += offset;
-	memxpy(ptr, new_image, data_length);
+	memcpy(ptr, new_image, data_length);
 	bm->node_to_page(&n, true);
 }
 

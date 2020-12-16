@@ -119,6 +119,7 @@ union{
     pagenum_t& parent;
     uint32_t& is_leaf;
     uint32_t& num_keys;
+	int64_t& pageLSN;
 
 	int table_id;
 	pagenum_t pagenum; // Used for disk-io.
@@ -127,14 +128,16 @@ union{
 		node(page_ptr, page_ptr->pagenum, page_ptr->table_id,
 			 page_ptr->data.pageData.page.parentPageNum,
 			 page_ptr->data.pageData.page.isLeaf,
-			 page_ptr->data.pageData.page.numOfKeys){}
-	node(page_t* buffer_ptr, pagenum_t pagenum, int table_id, pagenum_t& parent, uint32_t& is_leaf, uint32_t& num_keys):
+			 page_ptr->data.pageData.page.numOfKeys,
+			 page_ptr->data.pageData.page.pageLSN){}
+	node(page_t* buffer_ptr, pagenum_t pagenum, int table_id, pagenum_t& parent, uint32_t& is_leaf, uint32_t& num_keys, int64_t& pageLSN):
 			buffer_ptr(buffer_ptr),
 			pagenum(pagenum),
 			table_id(table_id),
 			parent(parent),
 			is_leaf(is_leaf),
-			num_keys(num_keys){
+			num_keys(num_keys),
+			pageLSN(pageLSN){
 				pointers.buffer_ptr = pages.buffer_ptr = keys.buffer_ptr = buffer_ptr;
 			}
 };

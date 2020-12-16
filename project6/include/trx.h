@@ -44,9 +44,11 @@ public:
 		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type));
 		prev_lsn = logs.back()->get_lsn();
 	}
-	void add_log(int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
+	//return prev_lsn == now add log's lsn
+	//and update prev_lsn
+	int64_t add_log(int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type, table_id, pageNum, offset, old_image, new_image));
-		prev_lsn = logs.back()->get_lsn();
+		return prev_lsn = logs.back()->get_lsn();
 	}
 	void add_edge(int x){
 		if(x==trx_id) return; // self loop is an-available;
@@ -96,7 +98,7 @@ public:
 	int record_lock(int table_id, int64_t key, int trx_id, bool is_write, lock_t* l);
 	void record_lock_wait(lock_t* l);
 	bool find(int trx_id);
-	void logging(int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image);
+	int64_t logging(int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image);
 	trx_t& operator [](int trx_id);
 };
 

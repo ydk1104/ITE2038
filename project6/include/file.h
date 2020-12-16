@@ -31,7 +31,9 @@ struct page_t{
 						pagenum_t parentPageNum;
 						uint32_t isLeaf;
 						uint32_t numOfKeys;
-						char reserved[104];
+						int64_t padding;
+						int64_t pageLSN;
+						char reserved[88];
 						pagenum_t pageNum;
 					}page;
 					union{

@@ -214,11 +214,12 @@ int update( int table_id, pagenum_t root, int64_t key, char* values, int trx_id)
 	node* leaf = record_lock_acquire(table_id, root, key, trx_id, 1, record_idx);
 	if(leaf == NULL) return 1;
 	// logging
-	tm->logging(trx_id, UPDATE, table_id, leaf->pagenum, 
+	int64_t LSN = tm->logging(trx_id, UPDATE, table_id, leaf->pagenum, 
 				((uint64_t)&(leaf->pointers[record_idx].value) -
 				(uint64_t)leaf->buffer_ptr) % PAGE_SIZE,
 					leaf->pointers[record_idx].value, values);
 	strncpy(leaf->pointers[record_idx].value, values, 120);
+	leaf->pageLSN = LSN;
 	node_to_page(&leaf, true);
 	return 0;
 }
