@@ -29,6 +29,8 @@ public:
 	void end(lockManager* lm, int32_t type){
 		for(auto& i:locks) lm->lock_release(i);
 		add_log(type);
+		flush_log();
+		delete logs.back();
 	}
 	void commit(lockManager* lm){
 		end(lm, COMMIT);
@@ -37,12 +39,16 @@ public:
 		aborted = true;
 		for(auto& i:logs){
 			i->undo(bm);
+			delete i;
 		}
 		end(lm, ROLLBACK);
 	}
 	void add_log(int32_t type){
 		logs.emplace_back(lm->make_log_t(prev_lsn, trx_id, type));
 		prev_lsn = logs.back()->get_lsn();
+	}
+	void flush_log(){
+		lm->flush();
 	}
 	//return prev_lsn == now add log's lsn
 	//and update prev_lsn

@@ -13,15 +13,19 @@ void info_t::read(char* data_ptr){
 	int log_size = *(int*)data_ptr;
 	memcpy(this, data_ptr, log_size);
 }
+
 int64_t info_t::get_lsn(){
 	return lsn;
 }
+
 int64_t info_t::get_prev_lsn(){
 	return prev_lsn;
 }
+
 int32_t info_t::get_trx_id(){
 	return trx_id;
 }
+
 int32_t info_t::get_type(){
 	return type;
 }
@@ -80,7 +84,12 @@ compensate_update_info_t::compensate_update_info_t(int64_t lsn, int64_t prev_lsn
 	next_undo_lsn(next_undo_lsn){}
 
 //log	
-log_t::log_t(info_t* info):info(info){}
+
+log_t::log_t(info_t* info, char* data_ptr):info(info){
+	info->write(data_ptr);
+}
+
+log_t::~log_t(){delete info;}
 
 void log_t::redo(bufferManager* bm){
 	return info->redo(bm);
@@ -107,37 +116,63 @@ int32_t log_t::get_type(){
 }
 
 //logManager
-logManager::logManager():lsn(0){}
+//1048576 = 1MB, logBuffer size = 10MB
+logManager::logManager():lsn(0),offset(0),
+		fd(open("logfile.data", O_RDWR | O_CREAT | O_SYNC, 0666)),
+		data(new char[10485760]){}
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
+	std::unique_lock<std::mutex> l(logBufferLatch);
+	auto temp_lsn = lsn - offset;
+	lsn += sizeof(begin_info_t);
 	switch(type){
 		case BEGIN :
-			return new log_t(new begin_info_t(lsn, prev_lsn, trx_id));
+			return new log_t(new begin_info_t(lsn, prev_lsn, trx_id),
+							data+temp_lsn);
 		case COMMIT :
-			return new log_t(new commit_info_t(lsn, prev_lsn, trx_id));
+			return new log_t(new commit_info_t(lsn, prev_lsn, trx_id),
+							data+temp_lsn);
 		case ROLLBACK :
-			return new log_t(new rollback_info_t(lsn, prev_lsn, trx_id));
+			return new log_t(new rollback_info_t(lsn, prev_lsn, trx_id),
+							data+temp_lsn);
 		default:
 			return NULL;
 	}
 }
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
+	std::unique_lock<std::mutex> l(logBufferLatch);
+	auto temp_lsn = lsn - offset;
+	lsn += sizeof(update_info_t);
 	switch(type){
 		case UPDATE :
-			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image));
+			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
+							data+temp_lsn);
 		default:
 			return NULL;
 	}
 }
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image, int64_t next_undo_lsn){
+	std::unique_lock<std::mutex> l(logBufferLatch);
+	auto temp_lsn = lsn - offset;
+	lsn += sizeof(compensate_update_info_t);
 	switch(type){
 		case COMPENSATE_UPDATE :
-			return new log_t(new compensate_update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn));
+			return new log_t(new compensate_update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
+							data+temp_lsn);
 		default:
 			return NULL;
 	}
 }
 
+log_t* logManager::make_log_t(char* data_ptr){
 
+}
+
+void logManager::flush(){
+	std::unique_lock<std::mutex> l(logBufferLatch);
+	lseek(fd, offset, SEEK_SET);
+	write(fd, data, lsn - offset);
+	offset = lsn;
+}
