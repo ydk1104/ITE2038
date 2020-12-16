@@ -42,8 +42,12 @@ operator_info_t::~operator_info_t(){}
 //physical redo & undo
 //interact with buffer manger
 void operator_info_t::redo(bufferManager* bm){
-//	get_page(table_id, pageNum);
-//	memcpy(page->data[offset], new_image, data_length);
+	node* n = NULL;
+	bm->page_to_node(table_id, pageNum, &n);
+	char* ptr = (char*)n->buffer_ptr;
+	ptr += offset;
+	memxpy(ptr, new_image, data_length);
+	bm->node_to_page(&n, true);
 }
 
 void operator_info_t::undo(bufferManager* bm){
