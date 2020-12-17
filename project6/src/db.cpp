@@ -20,8 +20,15 @@ int trx_begin(void){
 }
 
 int trx_commit(int trx_id){
+	//TODO : GET LOCK or check in tm->trx_commit
 	if(tm->find(trx_id) == false) return 0;
 	return tm->trx_commit(trx_id);
+}
+
+int trx_abort(int trx_id){
+	//TODO : GET LOCK or check in tm->trx_abort
+	if(tm->find(trx_id) == false) return 0;
+	return tm->trx_abort(trx_id, bm);
 }
 
 //in db, table_id is 0 base, but output is 1 base
