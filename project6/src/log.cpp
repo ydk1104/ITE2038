@@ -143,46 +143,46 @@ logManager::logManager():lsn(0),offset(0),data(new char[104857600]){}
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(begin_info_t) - 8;
 	switch(type){
 		case BEGIN :
-			return new log_t(new begin_info_t(temp_lsn, prev_lsn, trx_id),
+			return new log_t(new begin_info_t(lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		case COMMIT :
-			return new log_t(new commit_info_t(temp_lsn, prev_lsn, trx_id),
+			return new log_t(new commit_info_t(lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		case ROLLBACK :
-			return new log_t(new rollback_info_t(temp_lsn, prev_lsn, trx_id),
+			return new log_t(new rollback_info_t(lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		default:
 			return NULL;
 	}
+	lsn += sizeof(begin_info_t) - 8;
 }
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(update_info_t) - 8;
 	switch(type){
 		case UPDATE :
-			return new log_t(new update_info_t(temp_lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
+			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
 							data+temp_lsn);
 		default:
 			return NULL;
 	}
+	lsn += sizeof(update_info_t) - 8;
 }
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image, int64_t next_undo_lsn){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(compensate_update_info_t) - 8;
 	switch(type){
 		case COMPENSATE_UPDATE :
-			return new log_t(new compensate_update_info_t(temp_lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
+			return new log_t(new compensate_update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
 							data+temp_lsn);
 		default:
 			return NULL;
 	}
+	lsn += sizeof(update_info_t) - 8;
 }
 
 log_t* logManager::make_log_t(char* data_ptr){
