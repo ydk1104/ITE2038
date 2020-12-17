@@ -43,7 +43,7 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 	lm->open_log(log_path);
 	lm->analysis(trx_loser, trx_winner, logs, table_ids);
 	for(int i=0; i<15; i++){
-		if(table_ids[i]) bm->file_open(table_id_to_file_name[i+1]);
+		if(table_ids[i]) bm->file_open(table_id_to_file_name[i]);
 	}
 	
 	print("[ANALYSIS] Analysis success. Winner:");
