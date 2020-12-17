@@ -1,3 +1,4 @@
+#include<stdarg.h>
 #include<bpt.h>
 #include<db.h>
 #include<file.h>
@@ -8,10 +9,28 @@ static bufferManager *bm;
 static logManager *lm;
 static trxManager *tm;
 
+#define print(s, ...) printf(s, ##__VA_ARGS__)
+
 int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_path){
 	bm = new bufferManager(buf_num);
 	lm = new logManager;
 	tm = new trxManager(lm);
+	
+//TODO : move it to lm->recovety(); or make recovery_manager
+
+// phase 1 : analysis
+	#include<set>
+	#include<vector>
+	std::set<int> trx_loser, trx_winner;
+	std::vector<log_t*> logs;
+	lm->open_log(log_path);
+	lm->analysis(trx_loser, trx_winner, logs);
+	print("[ANALYSIS] Analysis pass start");
+
+// phase 2 : redo history
+
+// phase 3 : undo
+
 	return init_bpt(bm, tm);
 }
 
