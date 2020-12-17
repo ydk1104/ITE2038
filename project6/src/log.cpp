@@ -2,16 +2,16 @@
 #include "log.h"
 
 info_t::info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type):
-	log_size(log_size),lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d\n", type);}
+	log_size(log_size - 8),lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d\n", type);}
 
 //write to / read from buffer
 void info_t::write(char* data_ptr){
-	memcpy(data_ptr, this, log_size);
+	memcpy(data_ptr,(char*)this + 8, log_size);
 }
 
 void info_t::read(char* data_ptr){
 	int log_size = *(int*)data_ptr;
-	memcpy(this, data_ptr, log_size);
+	memcpy((char*)this + 8, data_ptr, log_size);
 }
 
 int64_t info_t::get_lsn(){
@@ -116,15 +116,15 @@ int32_t log_t::get_type(){
 }
 
 //logManager
-//1048576 = 1MB, logBuffer size = 10MB
+//1048576 = 1MB, logBuffer size = 100MB
 logManager::logManager():lsn(0),offset(0),
 		fd(open("logfile.data", O_RDWR | O_CREAT | O_SYNC, 0666)),
-		data(new char[10485760]){}
+		data(new char[104857600]){}
 
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(begin_info_t);
+	lsn += sizeof(begin_info_t) - 8;
 	switch(type){
 		case BEGIN :
 			return new log_t(new begin_info_t(lsn, prev_lsn, trx_id),
@@ -143,7 +143,8 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(update_info_t);
+	lsn += sizeof(update_info_t) - 8;
+	printf("%d %d\n", lsn);
 	switch(type){
 		case UPDATE :
 			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
@@ -156,7 +157,7 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, in
 log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image, int64_t next_undo_lsn){
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
-	lsn += sizeof(compensate_update_info_t);
+	lsn += sizeof(compensate_update_info_t) - 8;
 	switch(type){
 		case COMPENSATE_UPDATE :
 			return new log_t(new compensate_update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
@@ -175,4 +176,5 @@ void logManager::flush(){
 	lseek(fd, offset, SEEK_SET);
 	write(fd, data, lsn - offset);
 	offset = lsn;
+	printf("%d %d\n", offset, lsn);
 }
