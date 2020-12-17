@@ -28,6 +28,7 @@ public:
 	log_t(info_t* info, char* ptr);
 	int redo(bufferManager* bm);
 	void undo(bufferManager* bm);
+	void undo_with_log(bufferManager* bm, logManager* lm);
 	int32_t get_log_size();
 	int64_t get_lsn();
 	int64_t get_prev_lsn();
@@ -59,6 +60,7 @@ public:
 	virtual int64_t get_next_undo_lsn();
 	virtual int redo(bufferManager* bm);
 	virtual void undo(bufferManager* bm);
+	virtual void undo_with_log(bufferManager* bm, logManager* lm);
 	virtual ~info_t();
 };
 
@@ -76,6 +78,7 @@ public:
 	int32_t get_table_id();
 	int redo(bufferManager* bm);
 	void undo(bufferManager* bm);
+	void undo_with_log(bufferManager* bm, logManager* lm);
 	virtual ~operator_info_t();
 };
 
