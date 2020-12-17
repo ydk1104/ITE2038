@@ -55,9 +55,12 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 // phase 2 : redo history
 	print("[REDO] Redo pass start\n");
 	for(auto i : logs){
+		if(flag == 1){
+			if(log_num == 0) goto End;
+			log_num--;
+		}
 		auto lsn = i->get_lsn();
 		auto trx_id = i->get_trx_id();
-		printf("type : %d\n", i->get_type());
 		if(i->redo(bm)){
 			print("LSN %lu [CONSIDER-REDO] Transaction id %d\n", lsn, trx_id);
 			continue;
@@ -78,16 +81,40 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 			case COMPENSATE_UPDATE:
 				print("LSN %lu [CLR] next undo lsn %lu\n", lsn, i->get_next_undo_lsn());
 				break;
-
 		}
 	}
 	print("[REDO] Redo pass end\n");
 // phase 3 : undo
 	print("[UNDO] Undo pass start\n");
 
+	for(auto it = logs.rbegin(); it!=logs.rend(); it++){
+		if(flag == 2){
+			if(log_num == 0) goto End;
+			log_num--;
+		}
+		auto lsn = (*it)->get_lsn();
+		auto trx_id = (*it)->get_trx_id();
+		if(trx_loser.find(trx_id) == trx_loser.end()) continue;
+		switch((*it)->get_type()){
+			case BEGIN:
+			case COMMIT:
+			case ROLLBACK:
+				break;
+			case UPDATE:
+				print("LSN %lu [UPDATE] Transaction id %d undo apply\n", lsn, trx_id);
+				break;
+			case COMPENSATE_UPDATE:
+				//we can use next-undo-lsn to optimization
+				break;
+
+		}
+	}
+	print("[UNDO] Undo pass end\n");
+
 //truncate
 	lm->truncate(log_path, 0);
 // flush
+End:
 	for(int i=0; i<15; i++){
 		if(table_ids[i]) bm->close_buffer(i);
 	}
