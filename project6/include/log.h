@@ -26,13 +26,15 @@ private:
 public:
 	log_t(info_t* info);
 	log_t(info_t* info, char* ptr);
-	void redo(bufferManager* bm);
+	int redo(bufferManager* bm);
 	void undo(bufferManager* bm);
 	int32_t get_log_size();
 	int64_t get_lsn();
 	int64_t get_prev_lsn();
 	int32_t get_trx_id();
 	int32_t get_type();
+	int32_t get_table_id();
+	int64_t get_next_undo_lsn();
 	~log_t();
 };
 
@@ -53,7 +55,9 @@ public:
 	int64_t get_prev_lsn();
 	int32_t get_trx_id();
 	int32_t get_type();
-	virtual void redo(bufferManager* bm);
+	virtual int32_t get_table_id();
+	virtual int64_t get_next_undo_lsn();
+	virtual int redo(bufferManager* bm);
 	virtual void undo(bufferManager* bm);
 	virtual ~info_t();
 };
@@ -69,7 +73,8 @@ private:
 public:
 	operator_info_t(char* data);
 	operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image);
-	void redo(bufferManager* bm);
+	int32_t get_table_id();
+	int redo(bufferManager* bm);
 	void undo(bufferManager* bm);
 	virtual ~operator_info_t();
 };
@@ -101,10 +106,11 @@ public:
 
 class compensate_update_info_t:public operator_info_t{
 private:
-	int32_t next_undo_lsn;
+	int64_t next_undo_lsn;
 public:
 	compensate_update_info_t(char* data);
 	compensate_update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image, int64_t next_undo_lsn);
+	int64_t get_next_undo_lsn();
 };
 
 class logManager{
@@ -122,7 +128,7 @@ public:
 	log_t* make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, int32_t table_id, pagenum_t pageNum, int32_t offset, char* old_image, char* new_image, int64_t next_undo_lsn);
 	log_t* make_log_t(char* data_ptr);
 	void open_log(char* pathname);
-	void analysis(std::set<int>& loser, std::set<int>& winner, std::vector<log_t*>& logs);
+	void analysis(std::set<int>& loser, std::set<int>& winner, std::vector<log_t*>& logs, int* table_ids);
 	void flush();
 	void truncate(char* path, int len);
 };

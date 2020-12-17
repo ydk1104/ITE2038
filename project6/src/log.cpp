@@ -39,8 +39,16 @@ int32_t info_t::get_type(){
 	return type;
 }
 
+int32_t info_t::get_table_id(){
+	return 0;
+}
+
+int64_t info_t::get_next_undo_lsn(){
+	return 0;
+}
+
 // override
-void info_t::redo(bufferManager* bm){}
+int info_t::redo(bufferManager* bm){return 0;}
 void info_t::undo(bufferManager* bm){}
 info_t::~info_t(){}
 
@@ -53,15 +61,25 @@ operator_info_t::operator_info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn
 	}
 operator_info_t::~operator_info_t(){}
 
+int32_t operator_info_t::get_table_id(){
+	return table_id;
+}
+
 //physical redo & undo
 //interact with buffer manger
-void operator_info_t::redo(bufferManager* bm){
+int operator_info_t::redo(bufferManager* bm){
 	node* n = NULL;
 	bm->page_to_node(table_id, pageNum, &n);
+	if(n->pageLSN >= get_lsn()){
+		//TODO : is_dirty isn't true
+		bm->node_to_page(&n, true);
+		return 1;
+	}
 	char* ptr = (char*)n->buffer_ptr;
 	ptr += offset;
 	memcpy(ptr, new_image, data_length);
 	bm->node_to_page(&n, true);
+	return 0;
 }
 
 void operator_info_t::undo(bufferManager* bm){
@@ -98,6 +116,10 @@ compensate_update_info_t::compensate_update_info_t(int64_t lsn, int64_t prev_lsn
 		table_id, pageNum, offset, data_length, old_image, new_image),
 	next_undo_lsn(next_undo_lsn){}
 
+int64_t compensate_update_info_t::get_next_undo_lsn(){
+	return next_undo_lsn;
+}
+
 //log
 
 log_t::log_t(info_t* info):info(info){}
@@ -108,7 +130,7 @@ log_t::log_t(info_t* info, char* data_ptr):info(info){
 
 log_t::~log_t(){delete info;}
 
-void log_t::redo(bufferManager* bm){
+int log_t::redo(bufferManager* bm){
 	return info->redo(bm);
 }
 
@@ -134,6 +156,14 @@ int32_t log_t::get_trx_id(){
 
 int32_t log_t::get_type(){
 	return info->get_type();
+}
+
+int32_t log_t::get_table_id(){
+	return info->get_table_id();
+}
+
+int64_t log_t::get_next_undo_lsn(){
+	return info->get_next_undo_lsn();
 }
 
 //logManager
@@ -214,7 +244,7 @@ void logManager::open_log(char* pathname){
 	read(fd, data, lsn);
 }
 
-void logManager::analysis(std::set<int>& loser, std::set<int>& winner, std::vector<log_t*>& logs){
+void logManager::analysis(std::set<int>& loser, std::set<int>& winner, std::vector<log_t*>& logs, int* table_ids){
 	if(lsn == 0) return;
 	int64_t temp_offset = 0;
 	do{
@@ -228,10 +258,13 @@ void logManager::analysis(std::set<int>& loser, std::set<int>& winner, std::vect
 			case ROLLBACK:
 				loser.erase(temp_ptr->get_trx_id());
 				winner.insert(temp_ptr->get_trx_id());
+			case UPDATE:
+			case COMPENSATE_UPDATE:
+				table_ids[temp_ptr->get_table_id()] = true;
 			default:
 				break;
 		}
-		temp_offset += temp_ptr->get_log_size(); 
+		temp_offset += temp_ptr->get_log_size();
 	}while(temp_offset < lsn);
 	offset = logs[0]->get_lsn();
 }

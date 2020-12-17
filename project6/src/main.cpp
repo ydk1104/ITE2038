@@ -149,7 +149,7 @@ void test(TEST test){
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
 		tbl_id = open_table("out/out.txt");
-	int N = 1e6;
+	int N = 1e4;
 	switch(test){
 	case TEST_RAM_INSERT :
 	case TEST_DISK_INSERT :

@@ -9,6 +9,21 @@ static bufferManager *bm;
 static logManager *lm;
 static trxManager *tm;
 
+char* table_id_to_file_name[15] = {
+"DATA00.db",
+"DATA01.db",
+"DATA02.db",
+"DATA03.db",
+"DATA04.db",
+"DATA05.db",
+"DATA06.db",
+"DATA07.db",
+"DATA08.db",
+"DATA09.db",
+"DATA10.db",
+
+};
+
 #define print(s, ...) printf(s, ##__VA_ARGS__)
 
 int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_path){
@@ -19,13 +34,17 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 //TODO : move it to lm->recovety(); or make recovery_manager
 
 // phase 1 : analysis
+	print("[ANALYSIS] Analysis pass start\n");
 	#include<set>
 	#include<vector>
 	std::set<int> trx_loser, trx_winner;
 	std::vector<log_t*> logs;
+	int table_ids[15] = {0, };
 	lm->open_log(log_path);
-	lm->analysis(trx_loser, trx_winner, logs);
-	print("[ANALYSIS] Analysis pass start\n");
+	lm->analysis(trx_loser, trx_winner, logs, table_ids);
+	for(int i=0; i<15; i++){
+		if(table_ids[i]) bm->file_open(table_id_to_file_name[i]);
+	}
 	
 	print("[ANALYSIS] Analysis success. Winner:");
 	for(auto i : trx_winner) print(" %d", i);
@@ -34,11 +53,44 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 	print(".\n");
 
 // phase 2 : redo history
+	print("[REDO] Redo pass start\n");
+	for(auto i : logs){
+		auto lsn = i->get_lsn();
+		auto trx_id = i->get_trx_id();
+		printf("type : %d\n", i->get_type());
+		if(i->redo(bm)){
+			print("LSN %lu [CONSIDER-REDO] Transaction id %d\n", lsn, trx_id);
+			continue;
+		}
+		switch(i->get_type()){
+			case BEGIN:
+				print("LSN %lu [BEGIN] Transaction id %d\n", lsn, trx_id);
+				break;
+			case UPDATE:
+				print("LSN %lu [UPDATE] Transaction id %d redo apply\n", lsn, trx_id);
+				break;
+			case COMMIT:
+				print("LSN %lu [COMMIT] Transaction id %d\n", lsn, trx_id);
+				break;
+			case ROLLBACK:
+				print("LSN %lu [ROLLBACK] Transaction id %d\n", lsn, trx_id);
+				break;
+			case COMPENSATE_UPDATE:
+				print("LSN %lu [CLR] next undo lsn %lu\n", lsn, i->get_next_undo_lsn());
+				break;
 
+		}
+	}
+	print("[REDO] Redo pass end\n");
 // phase 3 : undo
+	print("[UNDO] Undo pass start\n");
 
-// truncate
+//truncate
 	lm->truncate(log_path, 0);
+// flush
+	for(int i=0; i<15; i++){
+		if(table_ids[i]) close_table(i);
+	}
 	return init_bpt(bm, tm);
 }
 
