@@ -79,7 +79,6 @@ public:
 	int redo(bufferManager* bm);
 	void undo(bufferManager* bm);
 	void undo_with_log(bufferManager* bm, logManager* lm);
-	virtual void undo_logging(logManager* lm);
 	virtual ~operator_info_t();
 };
 
@@ -106,7 +105,6 @@ class update_info_t:public operator_info_t{
 public:
 	update_info_t(char* data);
 	update_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t table_id, pagenum_t pageNum, int32_t offset, int32_t data_length, char* old_image, char* new_image);
-	void undo_logging(logManager* lm);
 };
 
 class compensate_update_info_t:public operator_info_t{
