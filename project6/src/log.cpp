@@ -96,8 +96,10 @@ void operator_info_t::undo(bufferManager* bm){
 
 void operator_info_t::undo_with_log(bufferManager* bm, logManager* lm){
 	undo(bm);
-	
+	undo_logging(lm);
 }
+
+void operator_info_t::undo_logging(logManger* lm){}
 
 begin_info_t::begin_info_t(char* data):info_t(data){}
 begin_info_t::begin_info_t(int64_t lsn, int64_t prev_lsn, int32_t trx_id):
