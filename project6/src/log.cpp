@@ -144,7 +144,6 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, in
 	std::unique_lock<std::mutex> l(logBufferLatch);
 	auto temp_lsn = lsn - offset;
 	lsn += sizeof(update_info_t) - 8;
-	printf("%d %d\n", lsn);
 	switch(type){
 		case UPDATE :
 			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
@@ -176,5 +175,4 @@ void logManager::flush(){
 	lseek(fd, offset, SEEK_SET);
 	write(fd, data, lsn - offset);
 	offset = lsn;
-	printf("%d %d\n", offset, lsn);
 }
