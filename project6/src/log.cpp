@@ -15,7 +15,7 @@ void info_t::write(char* data_ptr){
 }
 
 void info_t::read(char* data_ptr){
-	int log_size = *(int*)data_ptr;
+	int32_t log_size = *(int32_t*)data_ptr;
 	memcpy((char*)this + 8, data_ptr, log_size);
 }
 
@@ -146,13 +146,13 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type){
 	lsn += sizeof(begin_info_t) - 8;
 	switch(type){
 		case BEGIN :
-			return new log_t(new begin_info_t(lsn, prev_lsn, trx_id),
+			return new log_t(new begin_info_t(temp_lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		case COMMIT :
-			return new log_t(new commit_info_t(lsn, prev_lsn, trx_id),
+			return new log_t(new commit_info_t(temp_lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		case ROLLBACK :
-			return new log_t(new rollback_info_t(lsn, prev_lsn, trx_id),
+			return new log_t(new rollback_info_t(temp_lsn, prev_lsn, trx_id),
 							data+temp_lsn);
 		default:
 			return NULL;
@@ -165,7 +165,7 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, in
 	lsn += sizeof(update_info_t) - 8;
 	switch(type){
 		case UPDATE :
-			return new log_t(new update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
+			return new log_t(new update_info_t(temp_lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image),
 							data+temp_lsn);
 		default:
 			return NULL;
@@ -178,7 +178,7 @@ log_t* logManager::make_log_t(int64_t prev_lsn, int32_t trx_id, int32_t type, in
 	lsn += sizeof(compensate_update_info_t) - 8;
 	switch(type){
 		case COMPENSATE_UPDATE :
-			return new log_t(new compensate_update_info_t(lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
+			return new log_t(new compensate_update_info_t(temp_lsn, prev_lsn, trx_id, table_id, pageNum, offset, 120, old_image, new_image, next_undo_lsn),
 							data+temp_lsn);
 		default:
 			return NULL;
