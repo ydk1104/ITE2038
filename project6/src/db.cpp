@@ -43,7 +43,7 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 	lm->open_log(log_path);
 	lm->analysis(trx_loser, trx_winner, logs, table_ids);
 	for(int i=0; i<15; i++){
-		if(table_ids[i]) bm->file_open(table_id_to_file_name[i]);
+		if(table_ids[i]) bm->file_open(table_id_to_file_name[i+1]);
 	}
 	
 	print("[ANALYSIS] Analysis success. Winner:");
@@ -89,7 +89,7 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 	lm->truncate(log_path, 0);
 // flush
 	for(int i=0; i<15; i++){
-		if(table_ids[i]) close_table(i);
+		if(table_ids[i]) bm->close_buffer(i);
 	}
 	return init_bpt(bm, tm);
 }

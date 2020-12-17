@@ -6,7 +6,7 @@
 
 // MAIN
 
-#define PRINT
+//#define PRINT
 #ifndef PRINT 
    #define printf(x, ...) (void*)(x)
 #endif
@@ -148,12 +148,12 @@ void test(TEST test){
 	if(test == TEST_RAM_INSERT || test == TEST_RAM_FIND)
 		tbl_id = open_table("/mnt/ramdisk/out.txt");
 	else
-		tbl_id = open_table("out/out.txt");
+		tbl_id = open_table("DATA01.db");
 	int N = 1e4;
 	switch(test){
 	case TEST_RAM_INSERT :
 	case TEST_DISK_INSERT :
-		insert_test(N/10, tbl_id);
+		insert_test(N, tbl_id);
 		break;
 	case TEST_RAM_FIND :
 	case TEST_DISK_FIND :
