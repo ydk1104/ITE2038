@@ -7,7 +7,7 @@ info_t::info_t(char* data){
 }
 
 info_t::info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type):
-	log_size(log_size - 8),lsn(lsn),prev_lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d %d\n", type, lsn);}
+	log_size(log_size - 8),lsn(lsn),prev_lsn(prev_lsn),trx_id(trx_id),type(type){}
 
 //write to / read from buffer
 void info_t::write(char* data_ptr){
@@ -239,8 +239,14 @@ void logManager::analysis(std::set<int>& loser, std::set<int>& winner, std::vect
 void logManager::flush(){
 	//TODO : use file API
 	std::unique_lock<std::mutex> l(logBufferLatch);
-	lseek(fd, offset, SEEK_SET);
+	lseek(fd, offset - remove_offset, SEEK_SET);
 	write(fd, data, lsn - offset);
 	offset = lsn;
+}
+
+void logManager::truncate(char* path, int len){
+	ftruncate(fd, len);
+	offset = lsn;
+	remove_offset = offset;
 }
 

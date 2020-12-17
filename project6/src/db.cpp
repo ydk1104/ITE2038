@@ -25,12 +25,20 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 	std::vector<log_t*> logs;
 	lm->open_log(log_path);
 	lm->analysis(trx_loser, trx_winner, logs);
-	print("[ANALYSIS] Analysis pass start");
+	print("[ANALYSIS] Analysis pass start\n");
+	
+	print("[ANALYSIS] Analysis success. Winner:");
+	for(auto i : trx_winner) print(" %d", i);
+	print(", Loser:");
+	for(auto i : trx_loser) print(" %d", i);
+	print(".\n");
 
 // phase 2 : redo history
 
 // phase 3 : undo
 
+// truncate
+	lm->truncate(log_path, 0);
 	return init_bpt(bm, tm);
 }
 

@@ -111,7 +111,7 @@ class logManager{
 private:
 //	bufferManager* bm;
 //	std::atomic<int64_t> lsn, offset;
-	int64_t lsn, offset;
+	int64_t lsn, offset, remove_offset;
 	std::mutex logBufferLatch;
 	char* data;
 	int fd;
@@ -124,6 +124,7 @@ public:
 	void open_log(char* pathname);
 	void analysis(std::set<int>& loser, std::set<int>& winner, std::vector<log_t*>& logs);
 	void flush();
+	void truncate(char* path, int len);
 };
 
 #pragma pack(pop)
