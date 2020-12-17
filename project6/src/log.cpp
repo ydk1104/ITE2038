@@ -3,10 +3,11 @@
 
 info_t::info_t(char* data){
 	read(data);
+	printf("%d %d\n", type, lsn);
 }
 
 info_t::info_t(int32_t log_size, int64_t lsn, int64_t prev_lsn, int32_t trx_id, int32_t type):
-	log_size(log_size - 8),lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d\n", type);}
+	log_size(log_size - 8),lsn(lsn),prev_lsn(prev_lsn),trx_id(trx_id),type(type){printf("log %d %d\n", type, lsn);}
 
 //write to / read from buffer
 void info_t::write(char* data_ptr){
