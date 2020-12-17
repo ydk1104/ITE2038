@@ -50,7 +50,6 @@ int64_t info_t::get_next_undo_lsn(){
 // override
 int info_t::redo(bufferManager* bm){return 0;}
 void info_t::undo(bufferManager* bm){}
-void info_t::undo_with_log(bufferManager* bm, logManager* lm){}
 info_t::~info_t(){}
 
 operator_info_t::operator_info_t(char* data):info_t(data){}
@@ -92,10 +91,6 @@ void operator_info_t::undo(bufferManager* bm){
 	ptr += offset;
 	memcpy(ptr, old_image, data_length);
 	bm->node_to_page(&n, true);
-}
-
-void operator_info_t::undo_with_log(bufferManager* bm, logManager* lm){
-	undo(bm);
 }
 
 begin_info_t::begin_info_t(char* data):info_t(data){}
@@ -141,10 +136,6 @@ int log_t::redo(bufferManager* bm){
 
 void log_t::undo(bufferManager* bm){
 	return info->undo(bm);
-}
-
-void log_t::undo_with_log(bufferManager* bm, logManager* lm){
-	return info->undo_with_log(bm, lm);
 }
 
 int32_t log_t::get_log_size(){

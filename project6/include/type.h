@@ -12,7 +12,6 @@ class lockManager;
 class bufferManager;
 class fileManager;
 class trxManager;
-class logManager;
 
 class my_hash{
 	public:

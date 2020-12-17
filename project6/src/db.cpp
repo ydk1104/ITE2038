@@ -102,7 +102,6 @@ int init_db (int buf_num, int flag, int log_num, char* log_path, char* logmsg_pa
 				break;
 			case UPDATE:
 				print("LSN %lu [UPDATE] Transaction id %d undo apply\n", lsn, trx_id);
-				(*it)->undo_with_log(bm, lm);
 				break;
 			case COMPENSATE_UPDATE:
 				//we can use next-undo-lsn to optimization
